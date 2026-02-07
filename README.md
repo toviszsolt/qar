@@ -12,11 +12,24 @@
 
 [![GitHub License](https://img.shields.io/github/license/toviszsolt/qar?style=flat)](https://github.com/toviszsolt/qar/blob/main/LICENSE) [![npm](https://img.shields.io/npm/v/qarjs?style=flat&color=red)](https://www.npmjs.com/package/qarjs) [![GitHub Repo stars](https://img.shields.io/github/stars/toviszsolt/qar?color=DAAA3F)](https://github.com/toviszsolt/qar/stargazers) [![Run tests](https://github.com/toviszsolt/qar/actions/workflows/main.yml/badge.svg)](https://github.com/toviszsolt/qar/actions/workflows/main.yml) [![codecov](https://codecov.io/gh/toviszsolt/qar/branch/main/graph/badge.svg?token=IONV9YMZXG)](https://codecov.io/gh/toviszsolt/qar) [![Sponsor](https://img.shields.io/static/v1?label=sponsor&message=❤&color=ff69b4)](https://github.com/sponsors/toviszsolt)
 
+# What is Qar?
+
+MongoDB-style queries for plain JavaScript arrays. Simple, lightweight, and perfect for JS Apps, static sites, and JSON data.
+
+## Table of Contents
+
+[[Use Cases](#use-cases)] [[Why Qar?](#why-qar)] [[Installation](#installation)] [[Quick Start](#quick-start)] [[API Reference](#api-reference)] [[Query Operators](#query-operators)] [[Nested Properties](#nested-properties)] [[Field Projection](#field-projection)] [[Aggregation Pipeline](#aggregation-pipeline)] [[Examples](#examples)] [[Why Qar over alternatives?](#why-qar-over-alternatives)] [[TypeScript](#typescript)] [[Browser Support](#browser-support)] [[Contributing](#contributing)] [[License](#license)]
+
 </div>
 
-# Qar - Query Arrays
+## Use Cases
 
-MongoDB-style queries for plain JavaScript arrays. Simple, lightweight, and perfect for Next.js, static sites, and JSON data.
+- Query static JSON data in modern JS apps
+- Next.js/React/Vue/Node developers working with static JSON data
+- Frontend developers who need pipeline analytics
+- Backend developers needing in-memory querying without a database
+- Filter and search arrays of objects without a database
+- Perform complex data transformations with aggregation pipelines
 
 ## Why Qar?
 
@@ -560,11 +573,11 @@ const salesReport = products.aggregate([
 ]);
 ```
 
-## Use Cases
+## Examples
 
-### Next.js Static Data
+### JS App Static Data
 
-Perfect for querying JSON data in Next.js applications:
+Perfect for querying JSON data in JavaScript applications:
 
 ```javascript
 // app/products/page.tsx
@@ -658,7 +671,7 @@ const categories = posts.aggregate([
 
 **Qar is perfect when you:**
 
-- Work with static JSON data in Next.js or static sites
+- Work with static JSON data in JavaScript applications or static sites
 - Want MongoDB-style queries without a database
 - Need aggregation and data transformation
 - Want a clean, intuitive API
