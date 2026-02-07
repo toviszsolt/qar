@@ -18,11 +18,11 @@ MongoDB-style queries for plain JavaScript arrays. Simple, lightweight, and perf
 
 ## Table of Contents
 
-<span style="white-space:nowrap">[[Use Cases](#use-cases)]</span> <span style="white-space:nowrap">[[Why Qar?](#why-qar)]</span> <span style="white-space:nowrap">[[Installation](#installation)]</span> <span style="white-space:nowrap">[[Quick Start](#quick-start)]</span> <span style="white-space:nowrap">[[API Reference](#api-reference)]</span> <span style="white-space:nowrap">[[Query Operators](#query-operators)]</span> <span style="white-space:nowrap">[[Nested Properties](#nested-properties)]</span> <span style="white-space:nowrap">[[Field Projection](#field-projection)]</span> <span style="white-space:nowrap">[[Aggregation Pipeline](#aggregation-pipeline)]</span> <span style="white-space:nowrap">[[Examples](#examples)]</span> <span style="white-space:nowrap">[[Why Qar over alternatives?](#why-qar-over-alternatives)]</span> <span style="white-space:nowrap">[[TypeScript](#typescript)]</span> <span style="white-space:nowrap">[[Browser Support](#browser-support)]</span> <span style="white-space:nowrap">[[Guidelines](#guidelines)]</span> <span style="white-space:nowrap">[[License](#license)]</span>
+[[Use&nbsp;Cases](#use-cases)] [[Why&nbsp;Qar?](#why-qar)] [[Installation](#installation)] [[Quick&nbsp;Start](#quick-start)] [[API&nbsp;Reference](#api-reference)] [[Query&nbsp;Operators](#query-operators)] [[Nested&nbsp;Properties](#nested-properties)] [[Field&nbsp;Projection](#field-projection)] [[Aggregation&nbsp;Pipeline](#aggregation-pipeline)] [[Examples](#examples)] [[Why&nbsp;Qar&nbsp;over&nbsp;alternatives?](#why-qar-over-alternatives)] [[TypeScript](#typescript)] [[Browser&nbsp;Support](#browser-support)] [[Guidelines](#guidelines)] [[License](#license)]
 
 ## Sponsoring
 
-If you find this project useful, please consider [sponsoring me on GitHub](https://github.com/sponsors/toviszsolt), [PayPal](https://www.paypal.com/paypalme/toviszsolt), or [give the repo a star](https://github.com/toviszsolt/qar).
+If you find this project useful, please consider [[sponsoring me on GitHub](https://github.com/sponsors/toviszsolt)], [[PayPal](https://www.paypal.com/paypalme/toviszsolt)], or [[give the repo a star](https://github.com/toviszsolt/qar)].
 
 </div>
 
