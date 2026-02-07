@@ -38,14 +38,13 @@
     "access": "public"
   },
   "files": [
-    "dist/*",
-    "src/qar.d.ts"
+    "dist/*"
   ],
   "exports": {
     ".": {
+      "types": "./dist/qar.d.ts",
       "import": "./dist/qar.js",
-      "require": "./dist/qar.cjs",
-      "types": "./src/qar.d.ts"
+      "require": "./dist/qar.cjs"
     }
   },
   "scripts": {

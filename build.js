@@ -19,6 +19,8 @@ const runBuild = async (config) => {
     console.log(`Building: ${config.outfile || config.entryPoints}`);
     await esbuild.build(config);
   }
+
+  fs.copyFileSync('src/qar.d.ts', path.join(outDir, 'qar.d.ts'));
 };
 
 if (!isWatch) {
