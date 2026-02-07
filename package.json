@@ -1,0 +1,64 @@
+{
+  "name": "qarjs",
+  "version": "0.9.0",
+  "description": "MongoDB-like queries for JavaScript arrays",
+  "keywords": [
+    "query",
+    "array",
+    "mongodb",
+    "filter",
+    "json"
+  ],
+  "author": {
+    "name": "Zsolt Tovis",
+    "email": "tovis.zsolt@gmail.com",
+    "url": "https://toviszsolt.github.io/"
+  },
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/toviszsolt"
+    },
+    {
+      "type": "paypal",
+      "url": "https://www.paypal.com/paypalme/toviszsolt"
+    }
+  ],
+  "homepage": "https://github.com/toviszsolt/qar",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toviszsolt/qar.git"
+  },
+  "bugs": {
+    "url": "https://github.com/toviszsolt/qar/issues"
+  },
+  "type": "module",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist/*",
+    "src/qar.d.ts"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/qar.js",
+      "require": "./dist/qar.cjs",
+      "types": "./src/qar.d.ts"
+    }
+  },
+  "scripts": {
+    "watch": "node build.js --watch",
+    "build": "jest --verbose ./test && node build.js",
+    "test": "jest --verbose ./test",
+    "coverage": "jest --collect-coverage",
+    "coverage:open": "(start ./coverage/lcov-report/index.html || open ./coverage/lcov-report/index.html || xdg-open ./coverage/lcov-report/index.html)"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "esbuild": "^0.27.3",
+    "jest": "^30.2.0",
+    "jest-esbuild": "^0.4.0"
+  }
+}
