@@ -1,5 +1,4 @@
-<center>
-<pre>
+<pre align="center">
  ██████╗  █████╗ ██████╗
 ██╔═══██╗██╔══██╗██╔══██╗
 ██║   ██║███████║██████╔╝
@@ -9,9 +8,11 @@
 -=| MongoDB-style queries for plain JavaScript arrays. |=-
 </pre>
 
+<div align="center">
+
 [![GitHub License](https://img.shields.io/github/license/toviszsolt/qar?style=flat)](https://github.com/toviszsolt/qar/blob/main/LICENSE) [![npm](https://img.shields.io/npm/v/qarjs?style=flat&color=red)](https://www.npmjs.com/package/qarjs) [![GitHub Repo stars](https://img.shields.io/github/stars/toviszsolt/qar?color=DAAA3F)](https://github.com/toviszsolt/qar/stargazers) [![Run tests](https://github.com/toviszsolt/qar/actions/workflows/main.yml/badge.svg)](https://github.com/toviszsolt/qar/actions/workflows/main.yml) [![codecov](https://codecov.io/gh/toviszsolt/qar/branch/main/graph/badge.svg?token=IONV9YMZXG)](https://codecov.io/gh/toviszsolt/qar) [![Sponsor](https://img.shields.io/static/v1?label=sponsor&message=❤&color=ff69b4)](https://github.com/sponsors/toviszsolt)
 
-</center>
+</div>
 
 # Qar - Query Arrays
 
