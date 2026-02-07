@@ -18,7 +18,11 @@ MongoDB-style queries for plain JavaScript arrays. Simple, lightweight, and perf
 
 ## Table of Contents
 
-[[Use Cases](#use-cases)] [[Why Qar?](#why-qar)] [[Installation](#installation)] [[Quick Start](#quick-start)] [[API Reference](#api-reference)] [[Query Operators](#query-operators)] [[Nested Properties](#nested-properties)] [[Field Projection](#field-projection)] [[Aggregation Pipeline](#aggregation-pipeline)] [[Examples](#examples)] [[Why Qar over alternatives?](#why-qar-over-alternatives)] [[TypeScript](#typescript)] [[Browser Support](#browser-support)] [[Contributing](#contributing)] [[License](#license)]
+<nobr>[[Use Cases](#use-cases)]</nobr> <nobr>[[Why Qar?](#why-qar)]</nobr> <nobr>[[Installation](#installation)]</nobr> <nobr>[[Quick Start](#quick-start)]</nobr> <nobr>[[API Reference](#api-reference)]</nobr> <nobr>[[Query Operators](#query-operators)]</nobr> <nobr>[[Nested Properties](#nested-properties)]</nobr> <nobr>[[Field Projection](#field-projection)]</nobr> <nobr>[[Aggregation Pipeline](#aggregation-pipeline)]</nobr> <nobr>[[Examples](#examples)]</nobr> <nobr>[[Why Qar over alternatives?](#why-qar-over-alternatives)]</nobr> <nobr>[[TypeScript](#typescript)]</nobr> <nobr>[[Browser Support](#browser-support)]</nobr> <nobr>[[Guidelines](#guidelines)]</nobr> <nobr>[[License](#license)]</nobr>
+
+## Sponsoring
+
+If you find this project useful, please consider [sponsoring me on GitHub](https://github.com/sponsors/toviszsolt), [PayPal](https://www.paypal.com/paypalme/toviszsolt), or [give the repo a star](https://github.com/toviszsolt/qar).
 
 </div>
 
@@ -780,14 +784,16 @@ Works in all modern browsers and Node.js environments:
 - Safari: ✅
 - Node.js: ✅ (v14+)
 
-## Contributing
+## Guidelines
 
-Contributions are welcome! Please open an issue or submit a pull request.
+See [Code of Conduct](./CODE_OF_CONDUCT.md), [Contributing](./CONTRIBUTING.md), and [Security Policy](./SECURITY.md).
 
 ## License
 
-MIT © Zsolt Tövis
+MIT License © 2026 [Zsolt Tövis](https://github.com/toviszsolt)
 
 ---
+
+If you find this project useful, please consider [sponsoring me on GitHub](https://github.com/sponsors/toviszsolt), [PayPal](https://www.paypal.com/paypalme/toviszsolt), or [give the repo a star](https://github.com/toviszsolt/qar).
 
 Made with ❤️ for developers who love clean APIs and don't need a database for everything
