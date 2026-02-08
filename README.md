@@ -40,7 +40,7 @@ If you find this project useful, please consider [[sponsoring me on GitHub](http
 When you have a JSON file or an array of objects and need to filter, search, or query them with MongoDB-style syntax - without setting up a database.
 
 ```javascript
-import { Qar } from 'qarjs';
+import Qar from 'qarjs';
 
 const products = new Qar(productsData);
 
@@ -81,7 +81,7 @@ pnpm add qarjs
 ## Quick Start
 
 ```javascript
-import { Qar } from 'qarjs';
+import Qar from 'qarjs';
 
 const data = [
   { _id: 1, name: 'Alice', age: 20, role: 'user' },
@@ -543,6 +543,16 @@ posts.aggregate([{ $unwind: '$tags' }, { $group: { _id: '$tags', count: { $sum: 
 // => [{ _id: 'js', count: 2 }, { _id: 'node', count: 1 }, { _id: 'react', count: 1 }]
 ```
 
+You may also pass an options object instead of a string. The runtime accepts `path` (or the aliases `$path` or `field`) and an optional `preserveNullAndEmptyArrays` boolean. When `preserveNullAndEmptyArrays` is `true`, documents without the array field or with empty arrays are preserved with the unwound field set to `null`.
+
+```javascript
+// Using object form with aliases and preserveNullAndEmptyArrays
+posts.aggregate([
+  { $unwind: { path: '$tags', preserveNullAndEmptyArrays: true } },
+  { $group: { _id: '$tags', count: { $sum: 1 } } },
+]);
+```
+
 ### Complete Example
 
 ```javascript
@@ -586,7 +596,7 @@ Perfect for querying JSON data in JavaScript applications:
 ```javascript
 // app/products/page.tsx
 import productsData from '@/data/products.json';
-import { Qar } from 'qarjs';
+import Qar from 'qarjs';
 
 const products = new Qar(productsData);
 
@@ -611,7 +621,7 @@ export default function ProductsPage({ searchParams }) {
 ```javascript
 // app/api/search/route.ts
 import data from '@/data/items.json';
-import { Qar } from 'qarjs';
+import Qar from 'qarjs';
 
 const items = new Qar(data);
 
@@ -633,7 +643,7 @@ export async function GET(request) {
 
 ```javascript
 import blogPosts from './posts.json';
-import { Qar } from 'qarjs';
+import Qar from 'qarjs';
 
 const posts = new Qar(blogPosts);
 
@@ -758,7 +768,7 @@ const admins = users.find({ role: 'admin' }).toArray();
 Full TypeScript support included:
 
 ```typescript
-import { Qar } from 'qarjs';
+import Qar from 'qarjs';
 
 interface User {
   id: number;

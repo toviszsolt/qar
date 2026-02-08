@@ -1,4 +1,4 @@
-import { Qar } from './src/qar.js';
+import Qar from './src/qar.js';
 
 console.log('🚀 Qar Library - Comprehensive Integration Test\n');
 console.log('═'.repeat(60));

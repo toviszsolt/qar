@@ -1,4 +1,4 @@
-import { Qar } from '../src/qar.js';
+import Qar from '../src/qar.js';
 
 describe('Qar convenience methods', () => {
   test('constructor throws on non-array', () => {

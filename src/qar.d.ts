@@ -1,20 +1,36 @@
 /** Type definitions for Qar - In-memory query engine for JavaScript arrays. */
 export type QueryOperators<T = any> = {
+  /** Equality operator for matching values equal to the specified value. */
   $eq?: T;
+  /** Inequality operator for matching values not equal to the specified value. */
   $ne?: T;
+  /** Comparison operator for matching values less than the specified value. */
   $lt?: T;
+  /** Comparison operator for matching values less than or equal to the specified value. */
   $lte?: T;
+  /** Comparison operator for matching values greater than the specified value. */
   $gt?: T;
+  /** Comparison operator for matching values greater than or equal to the specified value. */
   $gte?: T;
+  /** Inclusion operator for matching values that are in the specified array. */
   $in?: T[];
+  /** Exclusion operator for matching values that are not in the specified array. */
   $nin?: T[];
+  /** Existence operator for matching documents that have (or do not have) the specified field. */
   $exists?: boolean;
+  /** Regular expression operator for matching string values against a regular expression. */
   $regex?: string | RegExp;
+  /** Options for the regular expression operator, such as 'i' for case-insensitive matching. */
   $options?: string;
+  /** Size operator for matching arrays with a specific number of elements. */
   $size?: number;
+  /** All operator for matching arrays that contain all the specified elements. */
   $all?: T extends any[] ? T : never;
+  /** Element match operator for matching arrays that contain at least one element that matches the specified query. */
   $elemMatch?: Partial<Record<string, any>>;
+  /** Type operator for matching values of a specific BSON type. */
   $type?: string | string[];
+  /** Modulo operator for matching values that satisfy a modulo condition. */
   $mod?: [number, number];
 };
 
@@ -29,10 +45,15 @@ export type QueryOperators<T = any> = {
 export type Query<T = any> = {
   [K in keyof T]?: T[K] | QueryOperators<T[K]>;
 } & {
+  /** Logical AND: All conditions must be true */
   $and?: Query<T>[];
+  /** Logical OR: At least one condition must be true */
   $or?: Query<T>[];
+  /** Logical NOR: None of the conditions must be true */
   $nor?: Query<T>[];
+  /** Logical NOT: Negates the specified condition */
   $not?: Query<T>;
+  /** Expression operator for using aggregation expressions in queries */
   $expr?: Record<string, any>;
 };
 
@@ -98,7 +119,18 @@ export type GroupStage = {
    */
   _id: null | string | Record<string, any>;
 
-  /** Additional fields computed using accumulator operators */
+  /**
+   * Additional fields computed using accumulator operators
+   * Supported accumulators include:
+   * - $sum: Calculates the sum of numeric values or counts the number of documents.
+   * - $avg: Calculates the average of numeric values.
+   * - $min: Finds the minimum value among the grouped documents.
+   * - $max: Finds the maximum value among the grouped documents.
+   * - $push: Creates an array of values from the grouped documents.
+   * - $first: Returns the value of the first document in each group.
+   * - $last: Returns the value of the last document in each group.
+   * Each field can be defined using a field reference, an expression, or a constant value.
+   */
   [field: string]:
     | { $sum: number | string | Record<string, any> }
     | { $avg: number | string | Record<string, any> }
@@ -117,12 +149,13 @@ export type GroupStage = {
  * The path field specifies the field to unwind, and the preserveNullAndEmptyArrays option determines whether to preserve documents without the array field or with empty arrays.
  */
 export type UnwindOptions = {
-  /** The field path to unwind (with or without $ prefix) */
-  path: string;
-  /**
-   * If true, documents without the array field or with empty arrays
-   * will be preserved with the field set to null
-   */
+  /** The field path to unwind (with or without $ prefix) - Standard MongoDB syntax */
+  path?: string;
+  /** Alternative alias for 'path' supported by the runtime */
+  $path?: string;
+  /** Alternative alias for 'path' supported by the runtime */
+  field?: string;
+  /** If true, documents without the array field or with empty arrays will be preserved with the field set to null */
   preserveNullAndEmptyArrays?: boolean;
 };
 

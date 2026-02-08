@@ -1,4 +1,4 @@
-import { Qar } from '../../src/qar.js';
+import Qar from '../../src/qar.js';
 import { QueryCursor } from '../../src/utils/queryCursor.js';
 
 describe('QueryCursor - basic chainable API', () => {

@@ -3,7 +3,7 @@ import { objValueResolve } from './utils/object.js';
 import { QueryCursor } from './utils/queryCursor.js';
 import { typeOf } from './utils/typeOf.js';
 
-export class Qar {
+export default class Qar {
   constructor(items = []) {
     if (typeOf(items) !== 'array') {
       throw new TypeError('Items must be an array of objects');

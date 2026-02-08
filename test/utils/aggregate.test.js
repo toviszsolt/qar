@@ -1,4 +1,4 @@
-import { Qar } from '../../src/qar.js';
+import Qar from '../../src/qar.js';
 import { aggregate, getParentForPath } from '../../src/utils/aggregate.js';
 
 describe('aggregation helpers', () => {
@@ -208,6 +208,7 @@ describe('aggregate extended', () => {
     const proj = data.aggregate([{ $project: null }]);
     expect(Array.isArray(proj)).toBe(true);
 
+    // @ts-ignore
     const lim = data.aggregate([{ $limit: 'nope' }]);
     expect(lim.length).toBe(0);
 
@@ -253,6 +254,7 @@ describe('aggregate extended', () => {
     expect(res.some((r) => r === null)).toBe(true);
 
     // numeric spec should be treated as invalid and return original docs
+    // @ts-ignore
     const resNum = docs.aggregate([{ $unwind: 5 }]);
     expect(resNum.length).toBe(docs.count());
   });
@@ -271,6 +273,7 @@ describe('aggregate extended', () => {
     expect(p).toBeDefined();
     expect(Object.prototype.hasOwnProperty.call(obj, 'a')).toBe(true);
     const obj2 = { a: 5 };
+    // @ts-ignore
     const p2 = getParentForPath(obj2, ['a', 'b']);
     expect(Object.prototype.hasOwnProperty.call(obj2, 'a')).toBe(true);
     expect(typeof obj2.a).toBe('object');
@@ -297,6 +300,7 @@ describe('aggregate extended', () => {
     // null spec should be treated as invalid and return original
     const resNull = docs.aggregate([{ $unwind: null }]);
     expect(resNull.length).toBe(docs.count());
+    // @ts-ignore
     const resNum = docs.aggregate([{ $unwind: 0 }]);
     expect(resNum.length).toBe(docs.count());
   });
@@ -312,6 +316,7 @@ describe('aggregate extended', () => {
   });
 
   test('sort handles va==null && vb==null, va==null and vb==null branches', () => {
+    // @ts-ignore
     const docs = new Qar([{ id: 1 }, { id: 2 }]);
     // both missing key
     const bothMissing = new Qar([{}, {}]).aggregate([{ $sort: { z: 1 } }]);
