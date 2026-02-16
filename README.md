@@ -22,7 +22,9 @@ MongoDB-style queries for plain JavaScript arrays. Simple, lightweight, and perf
 
 ## Sponsoring
 
-If you find this project useful, please consider [[sponsoring me on GitHub](https://github.com/sponsors/toviszsolt)], [[PayPal](https://www.paypal.com/paypalme/toviszsolt)], or [[give the repo a star](https://github.com/toviszsolt/qar)].
+If you find this project useful, please consider sponsoring me by:
+
+[[Donate&nbsp;via&nbsp;GitHub](https://github.com/sponsors/toviszsolt)] [[Donate&nbsp;via&nbsp;PayPal](https://www.paypal.com/paypalme/toviszsolt)] [[Give&nbsp;the&nbsp;repo&nbsp;a&nbsp;Star](https://github.com/toviszsolt/qar)] [[Follow&nbsp;me&nbsp;on&nbsp;GitHub](https://github.com/toviszsolt)] [[Share&nbsp;the&nbsp;project&nbsp;on&nbsp;X](https://twitter.com/intent/tweet?text=Check%20out%20Qar%20-%20MongoDB-style%20queries%20for%20plain%20JavaScript%20arrays!%20Perfect%20for%20JS%20apps%20and%20static%20sites.%20https://github.com/toviszsolt/qar)]
 
 </div>
 
@@ -804,6 +806,6 @@ MIT License © 2026 [Zsolt Tövis](https://github.com/toviszsolt)
 
 ---
 
-If you find this project useful, please consider [sponsoring me on GitHub](https://github.com/sponsors/toviszsolt), [PayPal](https://www.paypal.com/paypalme/toviszsolt), or [give the repo a star](https://github.com/toviszsolt/qar).
+If you find this project useful, please consider sponsoring me by: [Donate&nbsp;via&nbsp;GitHub](https://github.com/sponsors/toviszsolt) / [Donate&nbsp;via&nbsp;PayPal](https://www.paypal.com/paypalme/toviszsolt) / [Give&nbsp;the&nbsp;repo&nbsp;a&nbsp;Star](https://github.com/toviszsolt/qar) / [Follow&nbsp;me&nbsp;on&nbsp;GitHub](https://github.com/toviszsolt) / [Share&nbsp;the&nbsp;project&nbsp;on&nbsp;X](https://twitter.com/intent/tweet?text=Check%20out%20Qar%20-%20MongoDB-style%20queries%20for%20plain%20JavaScript%20arrays!%20Perfect%20for%20JS%20apps%20and%20static%20sites.%20https://github.com/toviszsolt/qar)
 
 Made with ❤️ for developers who love clean APIs and don't need a database for everything
