@@ -5,7 +5,7 @@ on:
     types: [published]
 
 permissions:
-  contents: write
+  contents: read
   id-token: write
 
 jobs:
@@ -28,26 +28,5 @@ jobs:
       - name: Build
         run: yarn build
 
-      - name: Create dist archive
-        run: |
-          mkdir release-package
-          cp -r dist/* release-package/
-          cp package.json release-package/
-          cp README.md release-package/
-          cp LICENSE release-package/ 2>/dev/null || :
-          cd release-package
-          zip -r ../qarjs-dist.zip .
-          cd ..
-
-      - name: Upload dist to release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: qarjs-dist.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish to npm
+      - name: Publish to npm with Trusted Publishing
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_PROVENANCE: true
