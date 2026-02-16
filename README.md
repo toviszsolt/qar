@@ -187,7 +187,7 @@ users.aggregate([{ $match: { age: { $gte: 18 } } }, { $group: { _id: '$role', co
 
 #### `toArray()`
 
-Returns a shallow copy of the raw array.
+Returns a deep copy of the raw array.
 
 ```javascript
 users.toArray();

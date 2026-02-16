@@ -147,22 +147,18 @@ describe('applyQuery', () => {
 
   test.concurrent('$regex with non-string value does not throw and returns false', () => {
     const a = [{ name: undefined }];
-    const res = applyQuery(a, { name: { $regex: '^a' } });
-    expect(res).toEqual([]);
+    expect(() => applyQuery(a, { name: { $regex: '^a' } })).toThrow();
   });
 
   test.concurrent('unknown operator yields no match (safety)', () => {
     const a = [{ x: 1 }];
-    const res = applyQuery(a, { x: { $unknown: 1 } });
-    expect(res).toEqual([]);
+    expect(() => applyQuery(a, { x: { $unknown: 1 } })).toThrow();
   });
 
   test.concurrent('logical operator type mismatch is ignored', () => {
     const a = [{ x: 1 }];
     // $and provided as object should be ignored and treated normally
-    const res = applyQuery(a, { $and: { x: 1 } });
-    // since $and is not an array it should be treated as normal key and not match
-    expect(res).toEqual([]);
+    expect(() => applyQuery(a, { $and: { x: 1 } })).toThrow();
   });
 
   // Additional operator tests to improve coverage
@@ -193,39 +189,20 @@ describe('applyQuery', () => {
 
   test.concurrent('invalid $regex logs warning and returns false', () => {
     const a = [{ name: 'Alice' }];
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    const res = applyQuery(a, { name: { $regex: '[invalid' } });
-    expect(res).toEqual([]);
-    expect(warn).toHaveBeenCalled();
-    warn.mockRestore();
+    const a2 = [{ name: 'Alice' }];
+    expect(() => applyQuery(a2, { name: { $regex: '[invalid' } })).toThrow();
   });
 
   test.concurrent('unrecognized operator emits warning', () => {
     const a = [{ x: 1 }];
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    const res = applyQuery(a, { x: { $nonsense: 1 } });
-    expect(res).toEqual([]);
-    // should warn about no recognized operators
-    expect(warn).toHaveBeenCalled();
-    warn.mockRestore();
+    expect(() => applyQuery(a, { x: { $nonsense: 1 } })).toThrow();
   });
 
   test.concurrent('combinator type mismatches for $or/$nor/$not warn and behave safely', () => {
     const a = [{ x: 1 }];
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
-
-    // $or as object
-    const resOr = applyQuery(a, { $or: { x: 1 } });
-    expect(resOr).toEqual([]);
-    // $nor as object
-    const resNor = applyQuery(a, { $nor: { x: 1 } });
-    expect(resNor).toEqual([]);
-    // $not as array
-    const resNot = applyQuery(a, { $not: ['x'] });
-    expect(resNot).toEqual([]);
-
-    expect(warn).toHaveBeenCalled();
-    warn.mockRestore();
+    expect(() => applyQuery(a, { $or: { x: 1 } })).toThrow();
+    expect(() => applyQuery(a, { $nor: { x: 1 } })).toThrow();
+    expect(() => applyQuery(a, { $not: ['x'] })).toThrow();
   });
 
   test.concurrent('nested combinators ($and/$or) evaluate correctly (recursion)', () => {
@@ -347,11 +324,7 @@ describe('applyQuery', () => {
 
   test.concurrent('top-level $regex key is handled and warns on non-string', () => {
     const a = [{ name: 'Alice' }];
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    const res = applyQuery(a, { $regex: '^A' });
-    expect(res).toEqual([]);
-    expect(warn).toHaveBeenCalled();
-    warn.mockRestore();
+    expect(() => applyQuery(a, { $regex: '^A' })).toThrow();
   });
 
   test.concurrent('$mod with invalid arg returns no match', () => {

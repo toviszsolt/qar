@@ -30,15 +30,15 @@ export default class Qar {
 
   distinct(field) {
     if (!field) return [];
-    const vals = new Set();
-    for (const it of this._items) {
-      const v =
+    const distinctItems = new Set();
+    for (const item of this._items) {
+      const itemValue =
         typeOf(field) === 'string' && field.startsWith('$')
-          ? objValueResolve(it, field.slice(1))
-          : objValueResolve(it, field);
-      if (v !== undefined) vals.add(v);
+          ? objValueResolve(item, field.slice(1))
+          : objValueResolve(item, field);
+      if (itemValue !== undefined) distinctItems.add(itemValue);
     }
-    return Array.from(vals);
+    return Array.from(distinctItems);
   }
 
   aggregate(pipeline = []) {

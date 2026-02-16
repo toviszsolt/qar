@@ -166,3 +166,18 @@ describe('QueryCursor - additional branch tests', () => {
     expect(res.length).toBe(2);
   });
 });
+
+// Additional targeted defensive-branch tests (kept in same file to ensure one test file per source file)
+test('`_applySortToDocuments` returns docs unchanged when no sort spec', () => {
+  const q = new QueryCursor([{ a: 1 }]);
+  const docs = [{ a: 1 }];
+  // default _sortSpec is null — should early-return original value
+  expect(q._applySortToDocuments(docs)).toBe(docs);
+});
+
+test('`_applySortToDocuments` returns non-array inputs unchanged when sort spec present', () => {
+  const q = new QueryCursor([{ a: 1 }]);
+  q._sortSpec = { a: 1 };
+  const notArray = null;
+  expect(q._applySortToDocuments(notArray)).toBe(notArray);
+});

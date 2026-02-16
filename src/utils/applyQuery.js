@@ -2,25 +2,36 @@ import { evaluateExpression } from './expressions.js';
 import { objValueResolve } from './object.js';
 import { typeOf } from './typeOf.js';
 
+const throwError = (...args) => {
+  throw new Error(args.join(' '));
+};
+
 const OPERATORS = Object.freeze({
   $eq: (value, expected) => value === expected,
+
   $ne: (value, expected) => value !== expected,
+
   $in: (value, list) => {
     if (typeOf(list) !== 'array') return false;
     if (typeOf(value) === 'array') return value.some((v) => list.includes(v));
     return list.includes(value);
   },
+
   $nin: (value, list) => {
     if (typeOf(list) !== 'array') return false;
     if (typeOf(value) === 'array') return !value.some((v) => list.includes(v));
     return !list.includes(value);
   },
+
   $exists: (value, shouldExist) => (value !== undefined) === shouldExist,
+
   $size: (value, size) => typeOf(value) === 'array' && value.length === size,
+
   $all: (value, items) => {
     if (typeOf(value) !== 'array' || typeOf(items) !== 'array') return false;
     return items.every((item) => value.includes(item));
   },
+
   $elemMatch: (value, condition) => {
     if (typeOf(value) !== 'array' || typeOf(condition) !== 'object') return false;
     const keys = Object.keys(condition);
@@ -34,10 +45,12 @@ const OPERATORS = Object.freeze({
       return true;
     });
   },
+
   $type: (value, expectedType) => {
     if (typeOf(expectedType) === 'array') return expectedType.some((t) => typeOf(value) === t);
     return typeOf(value) === expectedType;
   },
+
   $mod: (value, arr) => {
     if (typeOf(value) !== 'number' || typeOf(arr) !== 'array' || arr.length < 2) return false;
     const divisor = arr[0];
@@ -45,31 +58,36 @@ const OPERATORS = Object.freeze({
     if (typeOf(divisor) !== 'number' || typeOf(remainder) !== 'number') return false;
     return value % divisor === remainder;
   },
+
   $lt: (value, bound) => {
     if (typeOf(value) === 'date' && typeOf(bound) === 'date') return value.getTime() < bound.getTime();
     if (typeOf(value) !== typeOf(bound)) return false;
     return value < bound;
   },
+
   $lte: (value, bound) => {
     if (typeOf(value) === 'date' && typeOf(bound) === 'date') return value.getTime() <= bound.getTime();
     if (typeOf(value) !== typeOf(bound)) return false;
     return value <= bound;
   },
+
   $gt: (value, bound) => {
     if (typeOf(value) === 'date' && typeOf(bound) === 'date') return value.getTime() > bound.getTime();
     if (typeOf(value) !== typeOf(bound)) return false;
     return value > bound;
   },
+
   $gte: (value, bound) => {
     if (typeOf(value) === 'date' && typeOf(bound) === 'date') return value.getTime() >= bound.getTime();
     if (typeOf(value) !== typeOf(bound)) return false;
     return value >= bound;
   },
+
   $regex: (value, pattern, opts) => {
     try {
       return new RegExp(pattern, opts).test(String(value));
     } catch (e) {
-      console.warn('[applyQuery] invalid $regex pattern:', pattern, 'error:', e && e.message);
+      throwError('[applyQuery] invalid $regex pattern:', pattern, 'error:', e && e.message);
       return false;
     }
   },
@@ -83,7 +101,7 @@ const evaluateCondition = (value, condition) => {
   const operatorKeys = Object.keys(condition).filter((k) => Object.prototype.hasOwnProperty.call(OPERATORS, k));
 
   if (operatorKeys.length === 0) {
-    console.warn('[applyQuery] no recognized operators in condition:', condition);
+    throwError('[applyQuery] no recognized operators in condition:', condition);
     return false;
   }
 
@@ -113,7 +131,7 @@ const matches = (el, query) => {
         (typeOf(condition) === 'object' && Object.prototype.hasOwnProperty.call(condition, '$regex'))) &&
       typeOf(value) !== 'string'
     ) {
-      console.warn('[applyQuery] $regex used on non-string value, skipping match');
+      throwError('[applyQuery] $regex used on non-string value, skipping match');
       return false;
     }
 
@@ -128,19 +146,19 @@ const applyQuery = (collection = [], query, options = {}) => {
   if (typeOf(query) !== 'object') return dataSet;
 
   if (query.$and !== undefined && typeOf(query.$and) !== 'array') {
-    console.warn('[applyQuery] $and should be an array, ignoring as combinator:', query.$and);
+    throwError('[applyQuery] $and should be an array, ignoring as combinator:', query.$and);
   }
 
   if (query.$or !== undefined && typeOf(query.$or) !== 'array') {
-    console.warn('[applyQuery] $or should be an array, ignoring as combinator:', query.$or);
+    throwError('[applyQuery] $or should be an array, ignoring as combinator:', query.$or);
   }
 
   if (query.$nor !== undefined && typeOf(query.$nor) !== 'array') {
-    console.warn('[applyQuery] $nor should be an array, ignoring as combinator:', query.$nor);
+    throwError('[applyQuery] $nor should be an array, ignoring as combinator:', query.$nor);
   }
 
   if (query.$not !== undefined && typeOf(query.$not) !== 'object') {
-    console.warn('[applyQuery] $not should be an object, ignoring as combinator:', query.$not);
+    throwError('[applyQuery] $not should be an object, ignoring as combinator:', query.$not);
   }
 
   const indexes = options && options.indexes;

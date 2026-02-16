@@ -23,13 +23,17 @@ const getByPath = (obj, path) => {
 
 const collectArrayFieldConditions = (query, arrayField, acc = []) => {
   if (!query || typeOf(query) !== 'object') return acc;
+
   if (typeOf(query.$and) === 'array') {
     for (const q of query.$and) collectArrayFieldConditions(q, arrayField, acc);
     return acc;
   }
 
   for (const key of Object.keys(query)) {
-    if (key === '$and' || key === '$or' || key === '$not' || key === '$nor') continue;
+    if (key === '$and' || key === '$or' || key === '$not' || key === '$nor') {
+      continue;
+    }
+
     if (
       key === arrayField &&
       query[key] &&
@@ -38,17 +42,21 @@ const collectArrayFieldConditions = (query, arrayField, acc = []) => {
     ) {
       acc.push({ type: 'elemMatch', cond: query[key].$elemMatch });
     }
+
     if (key.startsWith(arrayField + '.')) {
       const sub = key.slice(arrayField.length + 1);
       acc.push({ type: 'subfield', subfield: sub, cond: query[key] });
     }
   }
+
   return acc;
 };
 
 const makePositionalPredicate = (query, arrayField) => {
   const conds = collectArrayFieldConditions(query, arrayField);
+
   if (conds.length === 0) return null;
+
   return (elem) => {
     for (const c of conds) {
       if (c.type === 'elemMatch') {
@@ -70,6 +78,7 @@ const makePositionalPredicate = (query, arrayField) => {
 
 const elementMatchesCondition = (elem, cond) => {
   if (!cond || typeOf(cond) !== 'object') return false;
+
   const keys = Object.keys(cond);
   if (keys.length === 0) return false;
   for (const k of keys) {

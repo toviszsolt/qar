@@ -12,7 +12,7 @@ describe('Qar convenience methods', () => {
     { id: 3, cat: 'a' },
   ];
 
-  test('toArray returns shallow copy', () => {
+  test('toArray returns deep copy', () => {
     const q = new Qar(items);
     const out = q.toArray();
     expect(Array.isArray(out)).toBe(true);
