@@ -1,6 +1,6 @@
 {
   "name": "qarjs",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "MongoDB-style queries for plain JavaScript arrays.",
   "keywords": [
     "query",
