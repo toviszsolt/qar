@@ -31,7 +31,7 @@ jobs:
       - name: Create dist archive
         run: |
           mkdir release-package
-          cp -r dist/* release-package/
+          cp -r dist/* release-package/dist/
           cp package.json release-package/
           cp README.md release-package/
           cp LICENSE release-package/ 2>/dev/null || :
