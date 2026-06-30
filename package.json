@@ -51,8 +51,8 @@
   },
   "scripts": {
     "watch": "node build.js --watch",
-    "build": "jest --verbose ./test && node build.js",
-    "test": "jest --verbose ./test",
+    "test": "jest --verbose",
+    "build": "jest --verbose && node build.js",
     "coverage": "jest --collect-coverage",
     "coverage:open": "(start ./coverage/lcov-report/index.html || open ./coverage/lcov-report/index.html || xdg-open ./coverage/lcov-report/index.html)"
   },
@@ -61,5 +61,13 @@
     "esbuild": "^0.28.1",
     "jest": "^30.4.2",
     "jest-esbuild": "^0.4.0"
+  },
+  "overrides": {
+    "picomatch": "^4.0.4",
+    "minimatch": "^10.2.5"
+  },
+  "resolutions": {
+    "picomatch": "^4.0.4",
+    "minimatch": "^10.2.5"
   }
 }
