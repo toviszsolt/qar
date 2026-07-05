@@ -41,7 +41,7 @@
   "files": [
     "dist/*"
   ],
-  "main": "./dist/qar.js",
+  "main": "./dist/qar.cjs",
   "module": "./dist/qar.js",
   "types": "./dist/qar.d.ts",
   "exports": {
