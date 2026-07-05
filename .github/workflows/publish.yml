@@ -50,4 +50,6 @@ jobs:
       - name: Publish to npm with Trusted Publishing
         env:
           NPM_CONFIG_PROVENANCE: true
-        run: npm publish --access public
+        run: |
+          npm pkg delete scripts dependencies devDependencies overrides resolutions
+          npm publish --access public
