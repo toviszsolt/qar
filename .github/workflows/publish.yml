@@ -35,6 +35,7 @@ jobs:
           cp README.md release-package/
           cp LICENSE release-package/ 2>/dev/null || :
           cd release-package
+          npm pkg delete scripts dependencies devDependencies overrides resolutions
           zip -r ../Release.zip .
           cd ..
 
