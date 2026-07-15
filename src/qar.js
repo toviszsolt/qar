@@ -1,4 +1,5 @@
 import { aggregate as runAggregate } from './utils/aggregate.js';
+import { applyQuery, matches } from './utils/applyQuery.js';
 import { objValueResolve } from './utils/object.js';
 import { QueryCursor } from './utils/queryCursor.js';
 import { typeOf } from './utils/typeOf.js';
@@ -16,16 +17,16 @@ export default class Qar {
   }
 
   findOne(query = {}, projection) {
-    const all = this.find(query, projection).toArray();
-    return all.length > 0 ? all[0] : null;
+    const res = this.find(query, projection).limit(1).toArray();
+    return res.length > 0 ? res[0] : null;
   }
 
   count(query = {}) {
-    return this.find(query).toArray().length;
+    return applyQuery(this._items, query).length;
   }
 
   exists(query = {}) {
-    return this.find(query).toArray().length > 0;
+    return this._items.some((item) => matches(item, query));
   }
 
   distinct(field) {

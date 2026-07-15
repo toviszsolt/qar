@@ -188,4 +188,4 @@ const applyQuery = (collection = [], query, options = {}) => {
   return dataSet.filter((el) => matches(el, query));
 };
 
-export { applyQuery, evaluateCondition };
+export { applyQuery, evaluateCondition, matches };
