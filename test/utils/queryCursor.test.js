@@ -122,11 +122,16 @@ describe('QueryCursor - additional branch tests', () => {
     expect(res.length).toBe(2);
   });
 
-  test('limit(null) returns array immediately', () => {
+  test('limit(null) remains lazy, chainable and returns all items', () => {
     const items = [{ id: 1 }, { id: 2 }];
-    const arr = QueryCursor.from(items, {}, null).limit(null);
-    expect(Array.isArray(arr)).toBe(true);
-    expect(arr).toEqual(items);
+    const cursor = QueryCursor.from(items, {}, null);
+
+    const chainResult = cursor.limit(null);
+    expect(chainResult).toBeInstanceOf(QueryCursor);
+
+    const finalArray = chainResult.project({ id: 1 }).toArray();
+    expect(Array.isArray(finalArray)).toBe(true);
+    expect(finalArray).toEqual([{ id: 1 }, { id: 2 }]);
   });
 
   test('sort comparator handles va==null && vb==null, va==null, vb==null branches', () => {

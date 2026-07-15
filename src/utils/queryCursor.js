@@ -28,9 +28,13 @@ class QueryCursor {
     return this;
   }
 
-  limit(n) {
-    if (n == null) return this.toArray();
-    this._limit = Math.max(0, parseInt(String(n), 10) || 0);
+  limit(n = null) {
+    if (n == null) {
+      this._limit = null;
+    } else {
+      this._limit = Math.max(0, parseInt(String(n), 10) || 0);
+    }
+
     return this;
   }
 
