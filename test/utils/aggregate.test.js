@@ -104,22 +104,26 @@ describe('aggregate extended', () => {
   test('unwind preserveNull and group with object _id and null _id', () => {
     const docs = new Qar([{ id: 1, cat: 'a' }, { id: 2 }]);
 
-    // unwind non-array with preserveNull should insert null field
+    // unwind non-array with preserveNull should keep each doc and set missing field to null
     const unwound = docs.aggregate([{ $unwind: { path: '$tags', preserveNullAndEmptyArrays: true } }]);
     expect(Array.isArray(unwound)).toBe(true);
-    // each doc should remain but have tags set to null when missing
-    expect(unwound.some((d) => d.tags === null)).toBe(true);
+    expect(unwound).toHaveLength(2);
+    expect(unwound.every((d) => d.tags === null)).toBe(true);
 
-    // group with object _id
+    // group with object _id should produce distinct groups for distinct evaluated object keys
     const g1 = new Qar([
       { id: 1, x: 1 },
       { id: 2, x: 1 },
       { id: 3, x: 2 },
     ]);
     const resObjId = g1.aggregate([{ $group: { _id: { x: '$x' }, count: { $sum: 1 } } }]);
-    // evaluateExpression does not produce object ids for plain object spec, so
-    // the implementation currently collapses into a single group (false key)
-    expect(resObjId.length).toBe(1);
+    expect(resObjId).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ _id: { x: 1 }, count: 2 }),
+        expect.objectContaining({ _id: { x: 2 }, count: 1 }),
+      ]),
+    );
+    expect(resObjId.length).toBe(2);
 
     // group with _id null should produce single group
     const gNull = g1.aggregate([{ $group: { _id: null, total: { $sum: '$x' } } }]);
@@ -344,5 +348,63 @@ describe('aggregate extended', () => {
     const data = new Qar([{}, { id: 2 }]);
     const res = data.aggregate([{ $sort: { id: 1 } }]);
     expect(res.length).toBe(2);
+  });
+
+  test('unwind preserveNull converts empty nested array field to null', () => {
+    const docs = new Qar([{ id: 1, meta: { tags: [] } }]);
+    const res = docs.aggregate([{ $unwind: { path: '$meta.tags', preserveNullAndEmptyArrays: true } }]);
+    expect(res).toEqual([{ id: 1, meta: { tags: null } }]);
+  });
+
+  test('aggregate $project builds nested output from dotted include path', () => {
+    const docs = [{ profile: { name: 'Anna' } }];
+
+    const res = aggregate(docs, [{ $project: { 'profile.name': 1 } }]);
+
+    expect(res).toEqual([{ profile: { name: 'Anna' } }]);
+  });
+
+  test('aggregate $project builds nested aliased output from source path', () => {
+    const docs = [{ user: { name: 'Anna', city: 'BP' } }];
+
+    const res = aggregate(docs, [
+      {
+        $project: {
+          'profile.name': '$user.name',
+          'profile.city': '$user.city',
+        },
+      },
+    ]);
+
+    expect(res).toEqual([{ profile: { name: 'Anna', city: 'BP' } }]);
+  });
+
+  test('aggregate $project builds nested computed output', () => {
+    const docs = [{ price: 10, tax: 2 }];
+
+    const res = aggregate(docs, [
+      {
+        $project: {
+          'stats.total': { $add: ['$price', '$tax'] },
+        },
+      },
+    ]);
+
+    expect(res).toEqual([{ stats: { total: 12 } }]);
+  });
+
+  test('aggregate $project exclusion removes top-level field', () => {
+    const res = aggregate([{ a: 1, b: 2 }], [{ $project: { b: 0 } }]);
+    expect(res).toEqual([{ a: 1 }]);
+  });
+
+  test('aggregate $project exclusion removes nested field', () => {
+    const res = aggregate([{ meta: { x: 1, y: 2 }, a: 1 }], [{ $project: { 'meta.x': 0 } }]);
+    expect(res).toEqual([{ meta: { y: 2 }, a: 1 }]);
+  });
+
+  test('aggregate $project exclusion breaks on null parent path', () => {
+    const res = aggregate([{ a: null, keep: 1 }], [{ $project: { 'a.b.c': 0 } }]);
+    expect(res).toEqual([{ a: null, keep: 1 }]);
   });
 });

@@ -6,8 +6,12 @@ import { typeOf } from './typeOf.js';
 const unwindStage = (docs, spec) => {
   const getPath = (source) => {
     if (typeOf(source) === 'string') return { path: source, preserveNull: false };
-    if (typeOf(source) === 'object')
-      return { path: source.path || source.$path || source.field, preserveNull: !!source.preserveNullAndEmptyArrays };
+    if (typeOf(source) === 'object') {
+      return {
+        path: source.path || source.$path || source.field,
+        preserveNull: !!source.preserveNullAndEmptyArrays,
+      };
+    }
     return { path: undefined, preserveNull: false };
   };
 
@@ -20,6 +24,7 @@ const unwindStage = (docs, spec) => {
 
   for (const doc of docs) {
     const arr = objValueResolve(doc == null ? {} : doc, path);
+
     if (typeOf(arr) !== 'array') {
       if (preserveNull) {
         const copy = objClone(doc);
@@ -30,6 +35,18 @@ const unwindStage = (docs, spec) => {
       }
       continue;
     }
+
+    if (arr.length === 0) {
+      if (preserveNull) {
+        const copy = objClone(doc);
+        const parts = path.split('.');
+        const parent = getParentForPath(copy, parts);
+        if (parent != null) parent[parts[parts.length - 1]] = null;
+        out.push(copy);
+      }
+      continue;
+    }
+
     for (const el of arr) {
       const copy = objClone(doc);
       const parts = path.split('.');
@@ -38,6 +55,7 @@ const unwindStage = (docs, spec) => {
       out.push(copy);
     }
   }
+
   return out;
 };
 
@@ -166,31 +184,58 @@ const sortStage = (docs, spec) => {
   });
 };
 
+const setByPath = (obj, path, value) => {
+  const parts = path.split('.');
+  const last = parts.pop();
+  let cur = obj;
+
+  for (const part of parts) {
+    if (cur[part] == null || typeOf(cur[part]) !== 'object') cur[part] = {};
+    cur = cur[part];
+  }
+
+  cur[last] = value;
+};
+
 const projectStage = (docs, spec) => {
   return docs.map((d) => {
     if (typeOf(spec) !== 'object') return { ...d };
-    const hasInclude = Object.keys(spec).some((k) => spec[k] === 1);
+
+    const hasInclude = Object.entries(spec).some(([, v]) => v !== 0);
     const out = {};
+
     if (hasInclude) {
       for (const [k, v] of Object.entries(spec)) {
         if (v === 1) {
           const val = objValueResolve(d, k);
-          if (val !== undefined) out[k] = val;
+          if (val !== undefined) setByPath(out, k, val);
         } else if (typeOf(v) === 'string' && v.startsWith('$')) {
-          out[k] = objValueResolve(d, v.slice(1));
+          const val = objValueResolve(d, v.slice(1));
+          if (val !== undefined) setByPath(out, k, val);
         } else if (typeOf(v) === 'object') {
-          out[k] = evaluateExpression(v, d);
+          setByPath(out, k, evaluateExpression(v, d));
         }
       }
       return out;
     }
+
     for (const key of Object.keys(d)) out[key] = d[key];
+
     for (const [k, v] of Object.entries(spec)) {
-      if (v === 0) delete out[k];
-      else if (typeOf(v) === 'string' && v.startsWith('$')) {
-        out[k] = objValueResolve(d, v.slice(1));
-      } else if (typeOf(v) === 'object') out[k] = evaluateExpression(v, d);
+      if (v === 0) {
+        const parts = k.split('.');
+        const last = parts.pop();
+        let parent = out;
+
+        for (const part of parts) {
+          if (parent == null) break;
+          parent = parent[part];
+        }
+
+        if (parent && last in parent) delete parent[last];
+      }
     }
+
     return out;
   });
 };

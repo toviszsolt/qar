@@ -223,4 +223,8 @@ describe('expressions extensions', () => {
     expect(evaluateExpression({ $map: { input: 'x', in: { $add: ['$$this', 1] } } })).toEqual([]);
     expect(evaluateExpression({ $switch: {} })).toBeNull();
   });
+
+  test('evaluateExpression top-level array maps each item', () => {
+    expect(evaluateExpression([null, { $add: [1, 2] }, { $eq: [1, 1] }])).toEqual([null, 3, true]);
+  });
 });

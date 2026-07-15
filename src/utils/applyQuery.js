@@ -94,35 +94,59 @@ const OPERATORS = Object.freeze({
 });
 
 const evaluateCondition = (value, condition) => {
-  if (typeOf(condition) !== 'object') {
+  if (typeOf(condition) !== 'object' || condition == null) {
     return value === condition;
   }
 
-  const operatorKeys = Object.keys(condition).filter((k) => Object.prototype.hasOwnProperty.call(OPERATORS, k));
+  const keys = Object.keys(condition);
+  const operatorKeys = keys.filter((k) => Object.prototype.hasOwnProperty.call(OPERATORS, k));
+  const hasDollarKeys = keys.some((k) => typeof k === 'string' && k.startsWith('$'));
 
   if (operatorKeys.length === 0) {
-    throwError('[applyQuery] no recognized operators in condition:', condition);
-    return false;
+    if (hasDollarKeys) {
+      throwError('[applyQuery] no recognized operators in condition:', JSON.stringify(condition));
+    }
+    return JSON.stringify(value) === JSON.stringify(condition);
   }
 
   return operatorKeys.every((operatorKey) => {
     if (operatorKey === '$regex') {
       return OPERATORS[operatorKey](value, condition[operatorKey], condition.$options);
-    } else {
-      return OPERATORS[operatorKey](value, condition[operatorKey]);
     }
+    return OPERATORS[operatorKey](value, condition[operatorKey]);
   });
 };
 
 const matches = (el, query) => {
-  if (typeOf(query) !== 'object') return false;
-  if (typeOf(query.$and) === 'array') return query.$and.every((q) => matches(el, q));
-  if (typeOf(query.$or) === 'array') return query.$or.some((q) => matches(el, q));
-  if (typeOf(query.$not) === 'object') return !matches(el, query.$not);
-  if (typeOf(query.$nor) === 'array') return !query.$nor.some((q) => matches(el, q));
-  if (query.$expr !== undefined) return Boolean(evaluateExpression(query.$expr, el));
+  if (typeOf(query) !== 'object' || query == null) return false;
+
+  if (query.$and !== undefined) {
+    if (typeOf(query.$and) !== 'array') return false;
+    if (!query.$and.every((q) => matches(el, q))) return false;
+  }
+
+  if (query.$or !== undefined) {
+    if (typeOf(query.$or) !== 'array') return false;
+    if (!query.$or.some((q) => matches(el, q))) return false;
+  }
+
+  if (query.$not !== undefined) {
+    if (typeOf(query.$not) !== 'object') return false;
+    if (matches(el, query.$not)) return false;
+  }
+
+  if (query.$nor !== undefined) {
+    if (typeOf(query.$nor) !== 'array') return false;
+    if (query.$nor.some((q) => matches(el, q))) return false;
+  }
+
+  if (query.$expr !== undefined) {
+    if (!Boolean(evaluateExpression(query.$expr, el))) return false;
+  }
 
   for (const key of Object.keys(query)) {
+    if (['$and', '$or', '$not', '$nor', '$expr'].includes(key)) continue;
+
     const condition = query[key];
     const value = objValueResolve(el, key);
 
@@ -131,12 +155,12 @@ const matches = (el, query) => {
         (typeOf(condition) === 'object' && Object.prototype.hasOwnProperty.call(condition, '$regex'))) &&
       typeOf(value) !== 'string'
     ) {
-      throwError('[applyQuery] $regex used on non-string value, skipping match');
       return false;
     }
 
     if (!evaluateCondition(value, condition)) return false;
   }
+
   return true;
 };
 

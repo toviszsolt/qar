@@ -327,9 +327,12 @@ const handleStringHelpers = (op, expr, ctx) => {
 
 const evaluateExpression = (expr, ctx) => {
   if (expr == null) return expr;
+  if (typeOf(expr) === 'array') return expr.map((item) => evaluateExpression(item, ctx));
   if (typeOf(expr) !== 'object') return expr;
+
   const keys = Object.keys(expr);
   if (keys.length === 0) return false;
+
   const op = keys[0];
 
   const handlers = [
@@ -350,7 +353,15 @@ const evaluateExpression = (expr, ctx) => {
     if (res !== undefined) return res.handled ? res.result : res;
   }
 
-  return false;
+  if (typeof op === 'string' && op.startsWith('$')) {
+    return false;
+  }
+
+  const out = {};
+  for (const [k, v] of Object.entries(expr)) {
+    out[k] = evaluateOperand(v, ctx);
+  }
+  return out;
 };
 
 export { evaluateExpression, evaluateOperand };

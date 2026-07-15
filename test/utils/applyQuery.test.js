@@ -1,4 +1,4 @@
-import { applyQuery } from '../../src/utils/applyQuery.js';
+import { applyQuery, matches } from '../../src/utils/applyQuery.js';
 
 describe('applyQuery', () => {
   // Normal cases
@@ -145,9 +145,10 @@ describe('applyQuery', () => {
     expect(applyQuery(a, { v: { $nin: 'y' } })).toEqual([]);
   });
 
-  test.concurrent('$regex with non-string value does not throw and returns false', () => {
+  test.concurrent('$regex with non-string value does not throw and returns no match', () => {
     const a = [{ name: undefined }];
-    expect(() => applyQuery(a, { name: { $regex: '^a' } })).toThrow();
+    expect(() => applyQuery(a, { name: { $regex: '^a' } })).not.toThrow();
+    expect(applyQuery(a, { name: { $regex: '^a' } })).toEqual([]);
   });
 
   test.concurrent('unknown operator yields no match (safety)', () => {
@@ -322,9 +323,10 @@ describe('applyQuery', () => {
     expect(applyQuery(a2, { arr: { $elemMatch: { x: 1 } } })).toEqual([]);
   });
 
-  test.concurrent('top-level $regex key is handled and warns on non-string', () => {
+  test.concurrent('top-level $regex key returns no match', () => {
     const a = [{ name: 'Alice' }];
-    expect(() => applyQuery(a, { $regex: '^A' })).toThrow();
+    expect(() => applyQuery(a, { $regex: '^A' })).not.toThrow();
+    expect(applyQuery(a, { $regex: '^A' })).toEqual([]);
   });
 
   test.concurrent('$mod with invalid arg returns no match', () => {
@@ -436,5 +438,42 @@ describe('applyQuery', () => {
     const a = [{ x: 1 }];
     const res = applyQuery(a, { $and: ['x'] });
     expect(res).toEqual([]);
+  });
+
+  test.concurrent('$and non-array in matches returns false', () => {
+    expect(matches({ x: 1 }, { $and: { x: 1 } })).toBe(false);
+  });
+
+  test.concurrent('$and with failing branch in matches returns false', () => {
+    expect(matches({ x: 1 }, { $and: [{ x: 1 }, { x: 2 }] })).toBe(false);
+  });
+
+  test.concurrent('$or non-array in matches returns false', () => {
+    expect(matches({ x: 1 }, { $or: { x: 1 } })).toBe(false);
+  });
+
+  test.concurrent('$or with no matching branch in matches returns false', () => {
+    expect(matches({ x: 1 }, { $or: [{ x: 2 }, { x: 3 }] })).toBe(false);
+  });
+
+  test.concurrent('$not non-object in matches returns false', () => {
+    expect(matches({ x: 1 }, { $not: 1 })).toBe(false);
+  });
+
+  test.concurrent('$not with matching inner query in matches returns false', () => {
+    expect(matches({ x: 1 }, { $not: { x: 1 } })).toBe(false);
+  });
+
+  test.concurrent('$nor non-array in matches returns false', () => {
+    expect(matches({ x: 1 }, { $nor: { x: 1 } })).toBe(false);
+  });
+
+  test.concurrent('$nor with matching branch in matches returns false', () => {
+    expect(matches({ x: 1 }, { $nor: [{ x: 1 }, { x: 2 }] })).toBe(false);
+  });
+
+  test.concurrent('plain object field condition uses object equality fallback', () => {
+    const a = [{ x: { a: 1, b: 2 } }, { x: { a: 1, b: 3 } }];
+    expect(applyQuery(a, { x: { a: 1, b: 2 } })).toEqual([{ x: { a: 1, b: 2 } }]);
   });
 });
