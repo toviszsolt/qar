@@ -1,4 +1,4 @@
-import { objClone, objPathResolve, objValueResolve } from '../../src/utils/object.js';
+import { isSafeKey, objClone, objPathResolve, objValueResolve } from '../../src/utils/object.js';
 
 describe('objPathResolve', () => {
   const cases = [
@@ -97,5 +97,18 @@ describe('objClone', () => {
     const [clonedObj] = Array.from(c.set.values());
     expect(clonedObj).toEqual(obj);
     expect(clonedObj).not.toBe(obj);
+  });
+
+  test('rejects __proto__, constructor, prototype', () => {
+    expect(isSafeKey('__proto__')).toBe(false);
+    expect(isSafeKey('constructor')).toBe(false);
+    expect(isSafeKey('prototype')).toBe(false);
+  });
+
+  test('accepts normal keys', () => {
+    expect(isSafeKey('name')).toBe(true);
+    expect(isSafeKey('address.zip')).toBe(true);
+    expect(isSafeKey('0')).toBe(true);
+    expect(isSafeKey('')).toBe(true);
   });
 });

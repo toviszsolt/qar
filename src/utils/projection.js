@@ -1,5 +1,5 @@
 import { evaluateCondition } from './applyQuery.js';
-import { objValueResolve } from './object.js';
+import { isSafeKey, objValueResolve } from './object.js';
 import { typeOf } from './typeOf.js';
 
 const setByPath = (obj, path, value) => {
@@ -7,10 +7,11 @@ const setByPath = (obj, path, value) => {
   const last = parts[parts.length - 1];
   const parent = parts.slice(0, -1).reduce((acc, p) => {
     if (acc == null) return acc;
+    if (!isSafeKey(p)) return acc;
     if (!Object.prototype.hasOwnProperty.call(acc, p) || typeOf(acc[p]) !== 'object') acc[p] = {};
     return acc[p];
   }, obj);
-  if (parent != null) parent[last] = value;
+  if (isSafeKey(last) && parent != null) parent[last] = value;
 };
 
 const getByPath = (obj, path) => {

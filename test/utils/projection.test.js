@@ -203,4 +203,18 @@ describe('projection utility', () => {
     const res = projectItem(item, { other: 0, 'meta.tags': { $slice: 1 } });
     expect(res).toEqual({ meta: { tags: [1] } });
   });
+
+  test('setByPath rejects __proto__ key to prevent prototype pollution', () => {
+    const item = { x: { y: 1 } };
+    const res = projectItem(item, { '__proto__.polluted': 1 });
+    expect(Object.prototype.hasOwnProperty.call(Object.prototype, 'polluted')).toBe(false);
+    expect(res).toEqual({});
+  });
+
+  test('setByPath rejects unsafe intermediate keys', () => {
+    const item = { constructor: { x: 1 } };
+    const res = projectItem(item, { 'constructor.x': 1 });
+    expect(Object.prototype.hasOwnProperty.call(Object.prototype, 'x')).toBe(false);
+    expect(res).toEqual({ x: 1 });
+  });
 });

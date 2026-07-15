@@ -1,6 +1,6 @@
 import { applyQuery } from './applyQuery.js';
 import { evaluateExpression } from './expressions.js';
-import { objClone, objValueResolve } from './object.js';
+import { isSafeKey, objClone, objValueResolve } from './object.js';
 import { typeOf } from './typeOf.js';
 
 const unwindStage = (docs, spec) => {
@@ -30,7 +30,8 @@ const unwindStage = (docs, spec) => {
         const copy = objClone(doc);
         const parts = path.split('.');
         const parent = getParentForPath(copy, parts);
-        if (parent != null) parent[parts[parts.length - 1]] = null;
+        const lastKey = parts[parts.length - 1];
+        if (isSafeKey(lastKey) && parent != null) parent[lastKey] = null;
         out.push(copy);
       }
       continue;
@@ -41,7 +42,8 @@ const unwindStage = (docs, spec) => {
         const copy = objClone(doc);
         const parts = path.split('.');
         const parent = getParentForPath(copy, parts);
-        if (parent != null) parent[parts[parts.length - 1]] = null;
+        const lastKey = parts[parts.length - 1];
+        if (isSafeKey(lastKey) && parent != null) parent[lastKey] = null;
         out.push(copy);
       }
       continue;
@@ -51,7 +53,8 @@ const unwindStage = (docs, spec) => {
       const copy = objClone(doc);
       const parts = path.split('.');
       const parent = getParentForPath(copy, parts);
-      if (parent != null) parent[parts[parts.length - 1]] = el;
+      const lastKey = parts[parts.length - 1];
+      if (isSafeKey(lastKey) && parent != null) parent[lastKey] = el;
       out.push(copy);
     }
   }
@@ -63,6 +66,7 @@ const getParentForPath = (root, parts) => {
   let acc = root;
   for (const part of parts.slice(0, -1)) {
     if (acc == null) return acc;
+    if (!isSafeKey(part)) return acc;
     if (!Object.prototype.hasOwnProperty.call(acc, part) || typeOf(acc[part]) !== 'object') acc[part] = {};
     acc = acc[part];
   }
@@ -187,9 +191,11 @@ const sortStage = (docs, spec) => {
 const setByPath = (obj, path, value) => {
   const parts = path.split('.');
   const last = parts.pop();
+  if (!isSafeKey(last)) return;
   let cur = obj;
 
   for (const part of parts) {
+    if (!isSafeKey(part)) return;
     if (cur[part] == null || typeOf(cur[part]) !== 'object') cur[part] = {};
     cur = cur[part];
   }

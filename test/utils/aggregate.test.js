@@ -407,4 +407,26 @@ describe('aggregate extended', () => {
     const res = aggregate([{ a: null, keep: 1 }], [{ $project: { 'a.b.c': 0 } }]);
     expect(res).toEqual([{ a: null, keep: 1 }]);
   });
+
+  test('getParentForPath rejects __proto__ intermediate key', () => {
+    const obj = {};
+    const res = getParentForPath(obj, ['__proto__', 'polluted']);
+    expect(res).toBe(obj);
+    expect({}.polluted).toBeUndefined();
+  });
+
+  test('setByPath rejects __proto__ intermediate and last key', () => {
+    const res = aggregate([{}], [{ $project: { '__proto__.polluted': 1 } }]);
+    expect(Object.prototype.hasOwnProperty.call(Object.prototype, 'polluted')).toBe(false);
+    expect(res).toEqual([{}]);
+    const res2 = aggregate([{ x: 1 }], [{ $project: { 'x.__proto__': 1 } }]);
+    expect(Object.prototype.hasOwnProperty.call(Object.prototype, 'polluted')).toBe(false);
+    expect(res2).toEqual([{}]);
+  });
+
+  test('setByPath rejects __proto__ in intermediate key via expression', () => {
+    const res = aggregate([{ name: 'test' }], [{ $project: { '__proto__.x': { $toString: '$name' } } }]);
+    expect(Object.prototype.hasOwnProperty.call(Object.prototype, 'x')).toBe(false);
+    expect(res).toEqual([{}]);
+  });
 });

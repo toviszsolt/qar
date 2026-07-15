@@ -1,3 +1,5 @@
+const isSafeKey = (key) => key !== '__proto__' && key !== 'constructor' && key !== 'prototype';
+
 const objValueResolve = (obj = {}, key = '') => {
   if (key.includes('.')) return objPathResolve(obj, key);
   return obj[key];
@@ -61,4 +63,4 @@ const objClone = (obj) => {
   return obj;
 };
 
-export { objClone, objPathResolve, objValueResolve };
+export { isSafeKey, objClone, objPathResolve, objValueResolve };
