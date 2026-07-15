@@ -248,6 +248,26 @@ describe('applyQuery', () => {
     expect(applyQuery(a, { v: { $ne: 1 } })).toEqual([a[1]]);
   });
 
+  test.concurrent('$eq and $ne deep equality with arrays', () => {
+    const a = [
+      { id: 1, tags: ['a', 'b'] },
+      { id: 2, tags: ['a', 'b'] },
+      { id: 3, tags: ['a'] },
+    ];
+    expect(applyQuery(a, { tags: { $eq: ['a', 'b'] } })).toEqual([a[0], a[1]]);
+    expect(applyQuery(a, { tags: { $ne: ['a', 'b'] } })).toEqual([a[2]]);
+  });
+
+  test.concurrent('$eq and $ne deep equality with objects', () => {
+    const a = [
+      { id: 1, addr: { city: 'NY', zip: 10001 } },
+      { id: 2, addr: { city: 'NY', zip: 10001 } },
+      { id: 3, addr: { city: 'Boston', zip: 2108 } },
+    ];
+    expect(applyQuery(a, { addr: { $eq: { city: 'NY', zip: 10001 } } })).toEqual([a[0], a[1]]);
+    expect(applyQuery(a, { addr: { $ne: { city: 'NY', zip: 10001 } } })).toEqual([a[2]]);
+  });
+
   test.concurrent('$nin when value not in list and when in list', () => {
     const a = [{ v: 'a' }, { v: 'b' }];
     expect(applyQuery(a, { v: { $nin: ['c'] } })).toEqual([a[0], a[1]]);

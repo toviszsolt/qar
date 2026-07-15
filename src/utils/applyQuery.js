@@ -7,9 +7,19 @@ const throwError = (...args) => {
 };
 
 const OPERATORS = Object.freeze({
-  $eq: (value, expected) => value === expected,
+  $eq: (value, expected) => {
+    if ((typeOf(value) === 'array' && typeOf(expected) === 'array') || (typeOf(value) === 'object' && typeOf(expected) === 'object')) {
+      return JSON.stringify(value) === JSON.stringify(expected);
+    }
+    return value === expected;
+  },
 
-  $ne: (value, expected) => value !== expected,
+  $ne: (value, expected) => {
+    if ((typeOf(value) === 'array' && typeOf(expected) === 'array') || (typeOf(value) === 'object' && typeOf(expected) === 'object')) {
+      return JSON.stringify(value) !== JSON.stringify(expected);
+    }
+    return value !== expected;
+  },
 
   $in: (value, list) => {
     if (typeOf(list) !== 'array') return false;
