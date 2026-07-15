@@ -38,42 +38,44 @@ export type QueryOperators<T = any> = {
  * A query object for filtering items based on specified criteria.
  * Each key corresponds to a field in the documents, and the value can be:
  * - A direct value for equality matching,
+ * - A plain embedded object for exact object equality,
  * - An object with query operators for more complex conditions.
- * Additionally, logical operators like $and, $or, $nor, and $not can be used to combine multiple query conditions.
- * The $expr operator allows for using aggregation expressions in queries.
+ * Additionally, logical operators like $and, $or, $nor, and $not can be used
+ * to combine multiple query conditions.
+ * The $expr operator allows the use of aggregation expressions in queries.
  */
 export type Query<T = any> = {
   [K in keyof T]?: T[K] | QueryOperators<T[K]>;
 } & {
-  /** Logical AND: All conditions must be true */
+  /** Logical AND: all conditions must match. */
   $and?: Query<T>[];
-  /** Logical OR: At least one condition must be true */
+  /** Logical OR: at least one condition must match. */
   $or?: Query<T>[];
-  /** Logical NOR: None of the conditions must be true */
+  /** Logical NOR: no condition may match. */
   $nor?: Query<T>[];
-  /** Logical NOT: Negates the specified condition */
+  /** Logical NOT: negates the specified condition. */
   $not?: Query<T>;
-  /** Expression operator for using aggregation expressions in queries */
+  /** Expression-based query condition. */
   $expr?: Record<string, any>;
 };
 
 /**
  * A projection value specifying how to include or transform a field in query results.
  * Can be:
- * - 1 to include the field
- * - 0 to exclude the field
- * - An object with $slice or $elemMatch for array field operations
+ * - 1 to include the field,
+ * - 0 to exclude the field,
+ * - An object with $slice or $elemMatch for array field operations.
  */
 export type ProjectionValue = 1 | 0 | { $slice?: number; $elemMatch?: Record<string, any> };
 
 /**
  * A projection object for specifying which fields to include or exclude in query results.
- * Each key corresponds to a field in the documents, and the value can be:
+ * Each key corresponds to a field path in the documents, and the value can be:
  * - 1 to include the field,
  * - 0 to exclude the field,
- * - An object with $slice or $elemMatch for array fields.
+ * - An object with $slice or $elemMatch for array field operations.
  * The _id field can also be included or excluded explicitly.
- * The projection can also be null to indicate no projection (include all fields).
+ * The projection can also be null to indicate no projection.
  */
 export type Projection<T = any> =
   | ({
@@ -87,20 +89,22 @@ export type Projection<T = any> =
 /**
  * A projection value for aggregation pipeline $project stages.
  * Can be:
- * - 1 to include the field
- * - 0 to exclude the field
- * - A field reference starting with $ (e.g., '$fieldName')
- * - An expression object for computed fields
+ * - 1 to include a field,
+ * - 0 to exclude a field,
+ * - A field reference starting with $ (for aliasing or remapping),
+ * - An expression object for computed output,
+ * - An object-shaped projected value built from nested expressions or references.
  */
-export type AggregationProjectionValue =
-  | 1
-  | 0
-  | string // Field references like '$skills'
-  | Record<string, any>; // Expression objects like { $add: ['$a', '$b'] }
+export type AggregationProjectionValue = 1 | 0 | string | Record<string, any>;
 
 /**
  * A projection specification for aggregation pipeline $project stages.
- * Allows field inclusion, exclusion, renaming, and computed expressions.
+ * Supports:
+ * - field inclusion and exclusion,
+ * - dotted output paths,
+ * - aliasing from source paths via '$field.path',
+ * - computed expressions,
+ * - nested object-shaped output.
  */
 export type AggregationProjection = {
   [key: string]: AggregationProjectionValue;
@@ -113,23 +117,22 @@ export type AggregationProjection = {
 export type GroupStage = {
   /**
    * The grouping key expression. Can be:
-   * - null: groups all documents into a single group
-   * - A field reference (e.g., '$city')
-   * - An object with field references (e.g., { city: '$city', year: '$year' })
+   * - null: groups all documents into a single group,
+   * - A field reference (for example '$city'),
+   * - An object-shaped expression (for example { city: '$city', year: '$year' }).
    */
   _id: null | string | Record<string, any>;
 
   /**
-   * Additional fields computed using accumulator operators
+   * Additional fields computed using accumulator operators.
    * Supported accumulators include:
-   * - $sum: Calculates the sum of numeric values or counts the number of documents.
-   * - $avg: Calculates the average of numeric values.
-   * - $min: Finds the minimum value among the grouped documents.
-   * - $max: Finds the maximum value among the grouped documents.
-   * - $push: Creates an array of values from the grouped documents.
-   * - $first: Returns the value of the first document in each group.
-   * - $last: Returns the value of the last document in each group.
-   * Each field can be defined using a field reference, an expression, or a constant value.
+   * - $sum
+   * - $avg
+   * - $min
+   * - $max
+   * - $push
+   * - $first
+   * - $last
    */
   [field: string]:
     | { $sum: number | string | Record<string, any> }
@@ -145,17 +148,19 @@ export type GroupStage = {
 };
 
 /**
- * Options for the $unwind stage in an aggregation pipeline, specifying how to deconstruct an array field.
- * The path field specifies the field to unwind, and the preserveNullAndEmptyArrays option determines whether to preserve documents without the array field or with empty arrays.
+ * Options for the $unwind stage in an aggregation pipeline.
+ * The path identifies the field to unwind, and preserveNullAndEmptyArrays keeps
+ * documents whose target field is missing, null, non-array, or an empty array,
+ * setting the unwound field to null when preserved.
  */
 export type UnwindOptions = {
-  /** The field path to unwind (with or without $ prefix) - Standard MongoDB syntax */
+  /** The field path to unwind, with or without a leading '$'. */
   path?: string;
-  /** Alternative alias for 'path' supported by the runtime */
+  /** Alternative alias for 'path' supported by the runtime. */
   $path?: string;
-  /** Alternative alias for 'path' supported by the runtime */
+  /** Alternative alias for 'path' supported by the runtime. */
   field?: string;
-  /** If true, documents without the array field or with empty arrays will be preserved with the field set to null */
+  /** Preserve documents without values to unwind and normalize the unwound field to null. */
   preserveNullAndEmptyArrays?: boolean;
 };
 
