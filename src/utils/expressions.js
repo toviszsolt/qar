@@ -55,6 +55,7 @@ const handleLogical = (op, expr, ctx) => {
 const handleArithmetic = (op, expr, ctx) => {
   const ops = ['$add', '$subtract', '$multiply', '$divide'];
   if (!ops.includes(op)) return undefined;
+
   const operands = expr[op];
   if (typeOf(operands) !== 'array' || operands.length < MIN_OPERAND_COUNT) return { handled: true, result: false };
 
@@ -76,6 +77,7 @@ const handleArithmetic = (op, expr, ctx) => {
 const handleComparison = (op, expr, ctx) => {
   const ops = ['$lt', '$lte', '$gt', '$gte', '$eq', '$ne'];
   if (!ops.includes(op)) return undefined;
+
   const operands = expr[op];
   if (typeOf(operands) !== 'array' || operands.length < MIN_OPERAND_COUNT) return { handled: true, result: false };
 
@@ -250,6 +252,7 @@ const handleConditional = (op, expr, ctx) => {
 
     return { handled: true, result: null };
   }
+
   if (op === '$ifNull') {
     const args = expr[op];
     if (typeOf(args) !== 'array' || args.length < MIN_OPERAND_COUNT)

@@ -1,4 +1,8 @@
-const isSafeKey = (key) => key !== '__proto__' && key !== 'constructor' && key !== 'prototype';
+import { typeOf } from './typeOf.js';
+
+const isSafeKey = (key) => {
+  return key !== '__proto__' && key !== 'constructor' && key !== 'prototype';
+};
 
 const objValueResolve = (obj = {}, key = '') => {
   if (key.includes('.')) return objPathResolve(obj, key);
@@ -18,8 +22,6 @@ const objPathResolve = (obj = {}, path = '') => {
 
   return result;
 };
-
-import { typeOf } from './typeOf.js';
 
 const objClone = (obj) => {
   if (obj == null) {
