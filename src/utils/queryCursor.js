@@ -28,13 +28,9 @@ class QueryCursor {
     return this;
   }
 
-  limit(n = null) {
-    if (n == null) {
-      this._limit = null;
-    } else {
-      this._limit = Math.max(0, parseInt(String(n), 10) || 0);
-    }
-
+  limit(n = 0) {
+    const val = Number(n);
+    this._limit = Number.isFinite(val) && val > 0 ? Math.floor(val) : null;
     return this;
   }
 

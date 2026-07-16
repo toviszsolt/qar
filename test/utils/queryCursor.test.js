@@ -64,11 +64,11 @@ describe('QueryCursor - additional branch tests', () => {
     expect(res.length).toBe(2);
   });
 
-  test('limit with 0 returns empty slice', () => {
+  test('limit with 0 returns all items (no limit)', () => {
     const items = [{ id: 1 }, { id: 2 }];
     const qc = QueryCursor.from(items, {}, null).limit(0);
     const res = qc.toArray();
-    expect(res).toEqual([]);
+    expect(res).toEqual([{ id: 1 }, { id: 2 }]);
   });
 
   test('sort direction -1 and default path', () => {
