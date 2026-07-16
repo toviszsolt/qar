@@ -3,18 +3,50 @@ import { evaluateExpression } from './expressions.js';
 import { isSafeKey, objClone, objValueResolve } from './object.js';
 import { typeOf } from './typeOf.js';
 
-const unwindStage = (docs, spec) => {
-  const getPath = (source) => {
-    if (typeOf(source) === 'string') return { path: source, preserveNull: false };
-    if (typeOf(source) === 'object') {
-      return {
-        path: source.path || source.$path || source.field,
-        preserveNull: !!source.preserveNullAndEmptyArrays,
-      };
-    }
-    return { path: undefined, preserveNull: false };
-  };
+const getParentForPath = (root, parts) => {
+  let acc = root;
+  for (const part of parts.slice(0, -1)) {
+    if (acc == null) return acc;
+    if (!isSafeKey(part)) return acc;
+    if (!Object.prototype.hasOwnProperty.call(acc, part) || typeOf(acc[part]) !== 'object') acc[part] = {};
+    acc = acc[part];
+  }
+  return acc;
+};
 
+const getPath = (source) => {
+  if (typeOf(source) === 'string') return { path: source, preserveNull: false };
+  if (typeOf(source) === 'object') {
+    return {
+      path: source.path || source.$path || source.field,
+      preserveNull: !!source.preserveNullAndEmptyArrays,
+    };
+  }
+  return { path: undefined, preserveNull: false };
+};
+
+const setByPath = (obj, path, value) => {
+  const parts = path.split('.');
+  const last = parts.pop();
+  if (!isSafeKey(last)) return;
+  let cur = obj;
+
+  for (const part of parts) {
+    if (!isSafeKey(part)) return;
+    if (cur[part] == null || typeOf(cur[part]) !== 'object') cur[part] = {};
+    cur = cur[part];
+  }
+
+  cur[last] = value;
+};
+
+const getValueFromSpec = (doc, valSpec) => {
+  if (typeOf(valSpec) === 'number') return valSpec;
+  if (typeOf(valSpec) === 'string' && valSpec.startsWith('$')) return objValueResolve(doc, valSpec.slice(1));
+  return evaluateExpression(valSpec, doc);
+};
+
+const unwindStage = (docs, spec) => {
   const { path: rawPath, preserveNull } = getPath(spec);
 
   if (!rawPath) return docs;
@@ -62,17 +94,6 @@ const unwindStage = (docs, spec) => {
   return out;
 };
 
-const getParentForPath = (root, parts) => {
-  let acc = root;
-  for (const part of parts.slice(0, -1)) {
-    if (acc == null) return acc;
-    if (!isSafeKey(part)) return acc;
-    if (!Object.prototype.hasOwnProperty.call(acc, part) || typeOf(acc[part]) !== 'object') acc[part] = {};
-    acc = acc[part];
-  }
-  return acc;
-};
-
 const initializeGroupAccumulator = (idValue, spec) => {
   const init = { _id: idValue };
   for (const [outField, expr] of Object.entries(spec)) {
@@ -88,12 +109,6 @@ const initializeGroupAccumulator = (idValue, spec) => {
     else init[outField] = null;
   }
   return init;
-};
-
-const getValueFromSpec = (doc, valSpec) => {
-  if (typeOf(valSpec) === 'number') return valSpec;
-  if (typeOf(valSpec) === 'string' && valSpec.startsWith('$')) return objValueResolve(doc, valSpec.slice(1));
-  return evaluateExpression(valSpec, doc);
 };
 
 const updateGroupAccumulator = (groupAccumulator, doc, spec) => {
@@ -186,21 +201,6 @@ const sortStage = (docs, spec) => {
     }
     return 0;
   });
-};
-
-const setByPath = (obj, path, value) => {
-  const parts = path.split('.');
-  const last = parts.pop();
-  if (!isSafeKey(last)) return;
-  let cur = obj;
-
-  for (const part of parts) {
-    if (!isSafeKey(part)) return;
-    if (cur[part] == null || typeOf(cur[part]) !== 'object') cur[part] = {};
-    cur = cur[part];
-  }
-
-  cur[last] = value;
 };
 
 const projectStage = (docs, spec) => {
