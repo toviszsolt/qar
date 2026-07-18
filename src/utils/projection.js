@@ -1,26 +1,6 @@
 import { evaluateCondition } from './applyQuery.js';
-import { isSafeKey, objValueResolve } from './object.js';
+import { getByPath, objValueResolve, setByPath } from './object.js';
 import { typeOf } from './typeOf.js';
-
-const setByPath = (obj, path, value) => {
-  const parts = path.split('.');
-  const last = parts[parts.length - 1];
-  const parent = parts.slice(0, -1).reduce((acc, p) => {
-    if (acc == null) return acc;
-    if (!isSafeKey(p)) return acc;
-    if (!Object.prototype.hasOwnProperty.call(acc, p) || typeOf(acc[p]) !== 'object') acc[p] = {};
-    return acc[p];
-  }, obj);
-  if (isSafeKey(last) && parent != null) parent[last] = value;
-};
-
-const getByPath = (obj, path) => {
-  const parts = path.split('.');
-  return parts.reduce((acc, p) => {
-    if (acc == null || !Object.prototype.hasOwnProperty.call(acc, p)) return undefined;
-    return acc[p];
-  }, obj);
-};
 
 const collectArrayFieldConditions = (query, arrayField, acc = []) => {
   if (!query || typeOf(query) !== 'object') return acc;
@@ -173,4 +153,4 @@ const projectCollection = (items = [], projection, query = null) => {
   return items.map((it) => projectItem(it, projection, query));
 };
 
-export { getByPath, projectCollection, projectItem, setByPath };
+export { projectCollection, projectItem };

@@ -1,4 +1,4 @@
-import { getByPath, projectCollection, projectItem, setByPath } from '../../src/utils/projection.js';
+import { projectCollection, projectItem } from '../../src/utils/projection.js';
 
 describe('projection utility', () => {
   test('include fields and exclude _id when specified', () => {
@@ -108,14 +108,6 @@ describe('projection utility', () => {
   test('projection with non-operator non-0/1 spec treats as exclusion-mode no-op', () => {
     const item = { name: 'A', age: 30 };
     expect(projectItem(item, { name: 'foo' })).toEqual({ name: 'A', age: 30 });
-  });
-
-  test('setByPath tolerates null root without throwing', () => {
-    expect(() => setByPath(null, 'a.b', 1)).not.toThrow();
-  });
-
-  test('getByPath returns undefined for missing path', () => {
-    expect(getByPath({}, 'missing.path')).toBeUndefined();
   });
 
   test('positional $ with query $elemMatch on query field', () => {

@@ -1,20 +1,9 @@
 import { applyQuery } from './applyQuery.js';
 import { evaluateExpression } from './expressions.js';
-import { isSafeKey, objClone, objValueResolve } from './object.js';
+import { getParentForPath, isSafeKey, objClone, objValueResolve, setByPath } from './object.js';
 import { typeOf } from './typeOf.js';
 
-const getParentForPath = (root, parts) => {
-  let acc = root;
-  for (const part of parts.slice(0, -1)) {
-    if (acc == null) return acc;
-    if (!isSafeKey(part)) return acc;
-    if (!Object.prototype.hasOwnProperty.call(acc, part) || typeOf(acc[part]) !== 'object') acc[part] = {};
-    acc = acc[part];
-  }
-  return acc;
-};
-
-const getPath = (source) => {
+const parseUnwindSpec = (source) => {
   if (typeOf(source) === 'string') return { path: source, preserveNull: false };
   if (typeOf(source) === 'object') {
     return {
@@ -25,21 +14,6 @@ const getPath = (source) => {
   return { path: undefined, preserveNull: false };
 };
 
-const setByPath = (obj, path, value) => {
-  const parts = path.split('.');
-  const last = parts.pop();
-  if (!isSafeKey(last)) return;
-  let cur = obj;
-
-  for (const part of parts) {
-    if (!isSafeKey(part)) return;
-    if (cur[part] == null || typeOf(cur[part]) !== 'object') cur[part] = {};
-    cur = cur[part];
-  }
-
-  cur[last] = value;
-};
-
 const getValueFromSpec = (doc, valSpec) => {
   if (typeOf(valSpec) === 'number') return valSpec;
   if (typeOf(valSpec) === 'string' && valSpec.startsWith('$')) return objValueResolve(doc, valSpec.slice(1));
@@ -47,7 +21,7 @@ const getValueFromSpec = (doc, valSpec) => {
 };
 
 const unwindStage = (docs, spec) => {
-  const { path: rawPath, preserveNull } = getPath(spec);
+  const { path: rawPath, preserveNull } = parseUnwindSpec(spec);
 
   if (!rawPath) return docs;
 
@@ -214,12 +188,12 @@ const projectStage = (docs, spec) => {
       for (const [k, v] of Object.entries(spec)) {
         if (v === 1) {
           const val = objValueResolve(d, k);
-          if (val !== undefined) setByPath(out, k, val);
+          if (val !== undefined) setByPath(out, k, val, true);
         } else if (typeOf(v) === 'string' && v.startsWith('$')) {
           const val = objValueResolve(d, v.slice(1));
-          if (val !== undefined) setByPath(out, k, val);
+          if (val !== undefined) setByPath(out, k, val, true);
         } else if (typeOf(v) === 'object') {
-          setByPath(out, k, evaluateExpression(v, d));
+          setByPath(out, k, evaluateExpression(v, d), true);
         }
       }
       return out;
@@ -266,4 +240,4 @@ const aggregate = (docs = [], pipeline = []) => {
   }, initial);
 };
 
-export { aggregate, getParentForPath };
+export { aggregate };

@@ -1,5 +1,5 @@
 import { applyQuery } from './applyQuery.js';
-import { objValueResolve } from './object.js';
+import { sortDocuments } from './object.js';
 import { projectCollection } from './projection.js';
 import { typeOf } from './typeOf.js';
 
@@ -36,29 +36,11 @@ class QueryCursor {
 
   toArray() {
     const queried = applyQuery(this._items, this._query);
-    const sorted = this._sortSpec ? this._applySortToDocuments(queried) : queried;
+    const sorted = this._sortSpec ? sortDocuments(queried, this._sortSpec) : queried;
     const skipped = this._skip && this._skip > 0 ? sorted.slice(this._skip) : sorted;
     const limited = this._limit != null ? skipped.slice(0, this._limit) : skipped;
     const projected = this._projection ? projectCollection(limited, this._projection, this._query) : limited;
     return projected;
-  }
-
-  _applySortToDocuments(docs) {
-    if (!this._sortSpec || typeOf(docs) !== 'array') return docs;
-    const keys = Object.keys(this._sortSpec);
-    return docs.slice().sort((a, b) => {
-      for (const k of keys) {
-        const dir = this._sortSpec[k] === -1 ? -1 : 1;
-        const va = objValueResolve(a, k);
-        const vb = objValueResolve(b, k);
-        if (va == null && vb == null) continue;
-        if (va == null) return -1 * dir;
-        if (vb == null) return 1 * dir;
-        if (va < vb) return -1 * dir;
-        if (va > vb) return 1 * dir;
-      }
-      return 0;
-    });
   }
 
   static from(items, query = {}, projection = null) {

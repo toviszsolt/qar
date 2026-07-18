@@ -1,7 +1,24 @@
-import { isSafeKey, objClone, objPathResolve, objValueResolve } from '../../src/utils/object.js';
+import {
+  getByPath,
+  getParentForPath,
+  isSafeKey,
+  objClone,
+  objPathResolve,
+  objValueResolve,
+  setByPath,
+  sortDocuments,
+} from '../../src/utils/object.js';
 
-describe('objPathResolve', () => {
-  const cases = [
+describe('object helpers', () => {
+  test('setByPath tolerates null root without throwing', () => {
+    expect(() => setByPath(null, 'a.b', 1)).not.toThrow();
+  });
+
+  test('getByPath returns undefined for missing path', () => {
+    expect(getByPath({}, 'missing.path')).toBeUndefined();
+  });
+
+  const pathResolveCases = [
     [{ a: { b: 2 } }, 'a.b', 2],
     [{ a: { b: { c: 3 } } }, 'a.b.c', 3],
     [{}, 'x', undefined],
@@ -9,39 +26,35 @@ describe('objPathResolve', () => {
     [{ foo: 'bar' }, '', { foo: 'bar' }],
   ];
 
-  test.concurrent.each(cases)('%p, %s -> %p', async (obj, path, expected) => {
+  test.concurrent.each(pathResolveCases)('%p, %s -> %p', async (obj, path, expected) => {
     // @ts-ignore
     expect(objPathResolve(obj, path)).toEqual(expected);
   });
-});
 
-test('objPathResolve returns undefined when intermediate property is null', () => {
-  const obj = { a: null };
-  expect(objPathResolve(obj, 'a.b')).toBeUndefined();
-});
+  test('objPathResolve returns undefined when intermediate property is null', () => {
+    const obj = { a: null };
+    expect(objPathResolve(obj, 'a.b')).toBeUndefined();
+  });
 
-test('objPathResolve handles null/undefined roots', () => {
-  // function defaults obj to {} when undefined, so empty path returns {}
-  expect(objPathResolve(undefined, '')).toEqual({});
-  expect(objPathResolve(undefined, 'a')).toBeUndefined();
-  expect(objPathResolve(null, 'a')).toBeUndefined();
-});
+  test('objPathResolve handles null/undefined roots', () => {
+    // function defaults obj to {} when undefined, so empty path returns {}
+    expect(objPathResolve(undefined, '')).toEqual({});
+    expect(objPathResolve(undefined, 'a')).toBeUndefined();
+    expect(objPathResolve(null, 'a')).toBeUndefined();
+  });
 
-describe('objValueResolve', () => {
-  const cases = [
+  const pathValueCases = [
     [{ a: 1 }, 'a', 1],
     [{ a: { b: 2 } }, 'a.b', 2],
     [{}, '', undefined],
     [undefined, 'a', undefined],
   ];
 
-  test.concurrent.each(cases)('%p, %s -> %p', async (obj, key, expected) => {
+  test.concurrent.each(pathValueCases)('%p, %s -> %p', async (obj, key, expected) => {
     // @ts-ignore
     expect(objValueResolve(obj, key)).toEqual(expected);
   });
-});
 
-describe('objClone', () => {
   test('returns primitives and null/undefined unchanged', () => {
     expect(objClone(1)).toBe(1);
     expect(objClone('a')).toBe('a');
@@ -110,5 +123,38 @@ describe('objClone', () => {
     expect(isSafeKey('address.zip')).toBe(true);
     expect(isSafeKey('0')).toBe(true);
     expect(isSafeKey('')).toBe(true);
+  });
+
+  test('getParentForPath helper handles null root, missing and non-object props', () => {
+    expect(getParentForPath(null, ['a', 'b'])).toBeNull();
+    const obj = {};
+    const p = getParentForPath(obj, ['a', 'b']);
+    expect(p).toBeDefined();
+    expect(Object.prototype.hasOwnProperty.call(obj, 'a')).toBe(true);
+    const obj2 = { a: 5 };
+    // @ts-ignore
+    const p2 = getParentForPath(obj2, ['a', 'b']);
+    expect(Object.prototype.hasOwnProperty.call(obj2, 'a')).toBe(true);
+    expect(typeof obj2.a).toBe('object');
+  });
+
+  test('getParentForPath rejects __proto__ intermediate key', () => {
+    const obj = {};
+    const res = getParentForPath(obj, ['__proto__', 'polluted']);
+    expect(res).toBe(obj);
+    expect({}.polluted).toBeUndefined();
+  });
+
+  test('sortDocuments returns docs unchanged when no sort spec', () => {
+    const docs = [{ a: 1 }];
+    expect(sortDocuments(docs, null)).toBe(docs);
+    // {} is a valid spec (with no keys) so it returns a new sorted array
+    expect(sortDocuments(docs, {})).toEqual(docs);
+  });
+
+  test('sortDocuments returns non-array inputs unchanged when sort spec present', () => {
+    expect(sortDocuments(null, { a: 1 })).toBeNull();
+    expect(sortDocuments(undefined, { a: 1 })).toBeUndefined();
+    expect(sortDocuments('not-array', { a: 1 })).toBe('not-array');
   });
 });

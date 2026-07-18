@@ -1,5 +1,5 @@
 import Qar from '../../src/qar.js';
-import { aggregate, getParentForPath } from '../../src/utils/aggregate.js';
+import { aggregate } from '../../src/utils/aggregate.js';
 
 describe('aggregation helpers', () => {
   const products = new Qar([
@@ -270,19 +270,6 @@ describe('aggregate extended', () => {
     expect(res[0].avgMissing).toBeNull();
   });
 
-  test('getParentForPath helper handles null root, missing and non-object props', () => {
-    expect(getParentForPath(null, ['a', 'b'])).toBeNull();
-    const obj = {};
-    const p = getParentForPath(obj, ['a', 'b']);
-    expect(p).toBeDefined();
-    expect(Object.prototype.hasOwnProperty.call(obj, 'a')).toBe(true);
-    const obj2 = { a: 5 };
-    // @ts-ignore
-    const p2 = getParentForPath(obj2, ['a', 'b']);
-    expect(Object.prototype.hasOwnProperty.call(obj2, 'a')).toBe(true);
-    expect(typeof obj2.a).toBe('object');
-  });
-
   test('$avg with expression object computes correctly', () => {
     const data = new Qar([
       { k: 'x', v: 1 },
@@ -406,13 +393,6 @@ describe('aggregate extended', () => {
   test('aggregate $project exclusion breaks on null parent path', () => {
     const res = aggregate([{ a: null, keep: 1 }], [{ $project: { 'a.b.c': 0 } }]);
     expect(res).toEqual([{ a: null, keep: 1 }]);
-  });
-
-  test('getParentForPath rejects __proto__ intermediate key', () => {
-    const obj = {};
-    const res = getParentForPath(obj, ['__proto__', 'polluted']);
-    expect(res).toBe(obj);
-    expect({}.polluted).toBeUndefined();
   });
 
   test('setByPath rejects __proto__ intermediate and last key', () => {

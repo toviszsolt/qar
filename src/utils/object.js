@@ -23,6 +23,63 @@ const objPathResolve = (obj = {}, path = '') => {
   return result;
 };
 
+const getByPath = (obj, path) => {
+  const parts = path.split('.');
+  return parts.reduce((acc, p) => {
+    if (acc == null || !Object.prototype.hasOwnProperty.call(acc, p)) return undefined;
+    return acc[p];
+  }, obj);
+};
+
+const setByPath = (obj, path, value, strict = false) => {
+  const parts = path.split('.');
+  const last = parts.pop();
+  if (!isSafeKey(last)) return;
+  let cur = obj;
+
+  for (const part of parts) {
+    if (!isSafeKey(part)) {
+      if (strict) return;
+      cur = obj;
+      break;
+    }
+    if (cur == null) return;
+    if (cur[part] == null || typeOf(cur[part]) !== 'object') cur[part] = {};
+    cur = cur[part];
+  }
+
+  if (cur != null) cur[last] = value;
+};
+
+const getParentForPath = (root, parts) => {
+  let acc = root;
+  for (const part of parts.slice(0, -1)) {
+    if (acc == null) return acc;
+    if (!isSafeKey(part)) return acc;
+    if (!Object.prototype.hasOwnProperty.call(acc, part) || typeOf(acc[part]) !== 'object') acc[part] = {};
+    acc = acc[part];
+  }
+  return acc;
+};
+
+const sortDocuments = (docs, spec) => {
+  if (!spec || typeOf(docs) !== 'array') return docs;
+  const keys = Object.keys(spec);
+  return docs.slice().sort((a, b) => {
+    for (const k of keys) {
+      const dir = spec[k] === -1 ? -1 : 1;
+      const va = objValueResolve(a, k);
+      const vb = objValueResolve(b, k);
+      if (va == null && vb == null) continue;
+      if (va == null) return -1 * dir;
+      if (vb == null) return 1 * dir;
+      if (va < vb) return -1 * dir;
+      if (va > vb) return 1 * dir;
+    }
+    return 0;
+  });
+};
+
 const objClone = (obj) => {
   if (obj == null) {
     return obj;
@@ -65,4 +122,4 @@ const objClone = (obj) => {
   return obj;
 };
 
-export { isSafeKey, objClone, objPathResolve, objValueResolve };
+export { isSafeKey, objClone, objPathResolve, objValueResolve, getByPath, setByPath, getParentForPath, sortDocuments };
