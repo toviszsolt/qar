@@ -7,6 +7,8 @@ import {
   objValueResolve,
   setByPath,
   sortDocuments,
+  deepEqual,
+  isPlainObject,
 } from '../../src/utils/object.js';
 
 describe('object helpers', () => {
@@ -74,42 +76,13 @@ describe('object helpers', () => {
     expect(c[1].a).toBe(2);
   });
 
-  test('deep clones plain objects', () => {
+  test('clones plain objects', () => {
     const original = { x: { y: 1 }, z: [1, 2] };
     const c = objClone(original);
     expect(c).toEqual(original);
     expect(c).not.toBe(original);
     original.x.y = 5;
     expect(c.x.y).toBe(1);
-  });
-
-  test('clones Date and RegExp instances', () => {
-    const d = new Date('2020-01-01T00:00:00Z');
-    const r = /ab/i;
-    const original = { d, r };
-    const c = objClone(original);
-    expect(c.d).toEqual(d);
-    expect(c.d).not.toBe(d);
-    expect(c.r.toString()).toBe(r.toString());
-    expect(c.r).not.toBe(r);
-  });
-
-  test('clones Map and Set deeply', () => {
-    const map = new Map();
-    map.set('k', { v: 1 });
-    const set = new Set();
-    const obj = { a: 1 };
-    set.add(obj);
-    const original = { map, set };
-    const c = objClone(original);
-    expect(c.map instanceof Map).toBe(true);
-    expect(c.set instanceof Set).toBe(true);
-    expect(c.map.get('k')).toEqual({ v: 1 });
-    expect(c.map.get('k')).not.toBe(map.get('k'));
-    // set membership: extract value from clone set
-    const [clonedObj] = Array.from(c.set.values());
-    expect(clonedObj).toEqual(obj);
-    expect(clonedObj).not.toBe(obj);
   });
 
   test('rejects __proto__, constructor, prototype', () => {
@@ -156,5 +129,91 @@ describe('object helpers', () => {
     expect(sortDocuments(null, { a: 1 })).toBeNull();
     expect(sortDocuments(undefined, { a: 1 })).toBeUndefined();
     expect(sortDocuments('not-array', { a: 1 })).toBe('not-array');
+  });
+
+  describe('deepEqual', () => {
+    test('returns true for identical primitives', () => {
+      expect(deepEqual(1, 1)).toBe(true);
+      expect(deepEqual('a', 'a')).toBe(true);
+      expect(deepEqual(true, true)).toBe(true);
+      expect(deepEqual(null, null)).toBe(true);
+      expect(deepEqual(undefined, undefined)).toBe(true);
+    });
+
+    test('returns false for different primitives', () => {
+      expect(deepEqual(1, 2)).toBe(false);
+      expect(deepEqual('a', 'b')).toBe(false);
+      expect(deepEqual(true, false)).toBe(false);
+      expect(deepEqual(null, undefined)).toBe(false);
+    });
+
+    test('returns true for identical arrays', () => {
+      expect(deepEqual([1, 2, 3], [1, 2, 3])).toBe(true);
+      expect(deepEqual([{ a: 1 }, [2, 3]], [{ a: 1 }, [2, 3]])).toBe(true);
+    });
+
+    test('returns false for different arrays', () => {
+      expect(deepEqual([1, 2], [1, 2, 3])).toBe(false);
+      expect(deepEqual([1, 2], [1, 3])).toBe(false);
+      expect(deepEqual([], [1])).toBe(false);
+    });
+
+    test('returns true for identical plain objects', () => {
+      expect(deepEqual({ a: 1, b: 2 }, { a: 1, b: 2 })).toBe(true);
+      expect(deepEqual({ a: { b: 1 } }, { a: { b: 1 } })).toBe(true);
+    });
+
+    test('returns false for different plain objects', () => {
+      expect(deepEqual({ a: 1 }, { a: 2 })).toBe(false);
+      expect(deepEqual({ a: 1 }, { b: 1 })).toBe(false);
+      expect(deepEqual({ a: 1 }, { a: 1, b: 2 })).toBe(false);
+    });
+
+    test('handles nested structures', () => {
+      const obj1 = { arr: [{ obj: { a: 1 } }] };
+      const obj2 = { arr: [{ obj: { a: 1 } }] };
+      expect(deepEqual(obj1, obj2)).toBe(true);
+    });
+
+    test('returns false for different types', () => {
+      expect(deepEqual({}, [])).toBe(false);
+      expect(deepEqual(1, '1')).toBe(false);
+      expect(deepEqual(null, {})).toBe(false);
+    });
+
+    test('handles Date objects (for query values)', () => {
+      const d1 = new Date('2020-01-01T00:00:00Z');
+      const d2 = new Date('2020-01-01T00:00:00Z');
+      const d3 = new Date('2021-01-01T00:00:00Z');
+      expect(deepEqual(d1, d2)).toBe(true);
+      expect(deepEqual(d1, d3)).toBe(false);
+      expect(deepEqual(d1, '2020-01-01')).toBe(false);
+    });
+  });
+
+  describe('isPlainObject', () => {
+    test('returns true for plain objects', () => {
+      expect(isPlainObject({})).toBe(true);
+      expect(isPlainObject({ a: 1 })).toBe(true);
+      expect(isPlainObject(Object.create(null))).toBe(true);
+    });
+
+    test('returns false for non-plain objects', () => {
+      expect(isPlainObject(null)).toBe(false);
+      expect(isPlainObject(undefined)).toBe(false);
+      expect(isPlainObject([])).toBe(false);
+      expect(isPlainObject(new Date())).toBe(false);
+      expect(isPlainObject(/regex/)).toBe(false);
+      expect(isPlainObject(new Map())).toBe(false);
+      expect(isPlainObject(new Set())).toBe(false);
+      expect(isPlainObject(function() {})).toBe(false);
+      expect(isPlainObject(1)).toBe(false);
+      expect(isPlainObject('str')).toBe(false);
+    });
+
+    test('returns false for class instances', () => {
+      class Custom {}
+      expect(isPlainObject(new Custom())).toBe(false);
+    });
   });
 });

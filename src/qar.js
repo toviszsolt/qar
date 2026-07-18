@@ -3,12 +3,14 @@ import { applyQuery, matches } from './utils/applyQuery.js';
 import { objValueResolve } from './utils/object.js';
 import { QueryCursor } from './utils/queryCursor.js';
 import { typeOf } from './utils/typeOf.js';
+import { validateDatabaseLike } from './utils/validate.js';
 
 export default class Qar {
   constructor(items = []) {
     if (typeOf(items) !== 'array') {
       throw new TypeError('Items must be an array of objects');
     }
+    validateDatabaseLike(items, '/items');
     this._items = items;
   }
 

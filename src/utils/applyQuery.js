@@ -1,25 +1,16 @@
 import { evaluateExpression } from './expressions.js';
 import { objValueResolve } from './object.js';
 import { typeOf } from './typeOf.js';
+import { deepEqual } from './object.js';
 
 const throwError = (...args) => {
   throw new Error(args.join(' '));
 };
 
 const OPERATORS = Object.freeze({
-  $eq: (value, expected) => {
-    if ((typeOf(value) === 'array' && typeOf(expected) === 'array') || (typeOf(value) === 'object' && typeOf(expected) === 'object')) {
-      return JSON.stringify(value) === JSON.stringify(expected);
-    }
-    return value === expected;
-  },
+  $eq: (value, expected) => deepEqual(value, expected),
 
-  $ne: (value, expected) => {
-    if ((typeOf(value) === 'array' && typeOf(expected) === 'array') || (typeOf(value) === 'object' && typeOf(expected) === 'object')) {
-      return JSON.stringify(value) !== JSON.stringify(expected);
-    }
-    return value !== expected;
-  },
+  $ne: (value, expected) => !deepEqual(value, expected),
 
   $in: (value, list) => {
     if (typeOf(list) !== 'array') return false;

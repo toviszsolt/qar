@@ -85,31 +85,11 @@ const objClone = (obj) => {
     return obj;
   }
 
-  if (obj instanceof Date) {
-    return new Date(obj.getTime());
-  }
-
-  if (obj instanceof RegExp) {
-    return new RegExp(obj);
-  }
-
-  if (obj instanceof Map) {
-    const objectMap = new Map();
-    for (const [k, v] of obj.entries()) objectMap.set(k, objClone(v));
-    return objectMap;
-  }
-
-  if (obj instanceof Set) {
-    const objectSet = new Set();
-    for (const v of obj.values()) objectSet.add(objClone(v));
-    return objectSet;
-  }
-
   if (typeOf(obj) === 'array') {
     return obj.map((el) => objClone(el));
   }
 
-  if (typeOf(obj) === 'object') {
+  if (isPlainObject(obj)) {
     const clone = {};
     const keys = Object.keys(obj);
     for (let i = 0; i < keys.length; i++) {
@@ -122,4 +102,45 @@ const objClone = (obj) => {
   return obj;
 };
 
-export { isSafeKey, objClone, objPathResolve, objValueResolve, getByPath, setByPath, getParentForPath, sortDocuments };
+const isPlainObject = (value) => {
+  const type = typeOf(value);
+  if (type !== 'object') return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+};
+
+const deepEqual = (a, b) => {
+  if (a === b) return true;
+  if (a == null || b == null) return a === b;
+
+  const typeA = typeOf(a);
+  const typeB = typeOf(b);
+  if (typeA !== typeB) return false;
+
+  if (typeA === 'array') {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (!deepEqual(a[i], b[i])) return false;
+    }
+    return true;
+  }
+
+  if (typeA === 'object') {
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+    if (keysA.length !== keysB.length) return false;
+    for (const key of keysA) {
+      if (!Object.prototype.hasOwnProperty.call(b, key)) return false;
+      if (!deepEqual(a[key], b[key])) return false;
+    }
+    return true;
+  }
+
+  if (typeA === 'date') {
+    return a.getTime() === b.getTime();
+  }
+
+  return false;
+};
+
+export { isSafeKey, objClone, objPathResolve, objValueResolve, getByPath, setByPath, getParentForPath, sortDocuments, deepEqual, isPlainObject };
