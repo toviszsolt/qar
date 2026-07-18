@@ -7,6 +7,9 @@ export type AggregationExpression = Record<string, any>;
 export type IndexMap = Map<any, any[]>;
 export type IndexSpec = Record<string, IndexMap>;
 
+/** Type for specifying the source of a lookup. Can be a Qar instance or an array. */
+export type LookupFrom = Qar<any> | any[];
+
 export type QueryOperators<T = any> = {
   /** Equality operator for matching values equal to the specified value. */
   $eq?: T;
@@ -33,10 +36,10 @@ export type QueryOperators<T = any> = {
   /** Size operator for matching arrays with a specific number of elements. */
   $size?: number;
   /** All operator for matching arrays that contain all the specified elements. */
-  $all?: T extends any[] ? T : never;
+  $all?: T extends Array<infer U> ? U[] : never;
   /** Element match operator for matching arrays that contain at least one element that matches the specified query. */
-  $elemMatch?: Query<T>;
-  /** Type operator for matching values of a specific BSON type. */
+  $elemMatch?: T extends Array<infer U> ? Query<U> | QueryOperators<U> : Query<T>;
+  /** Type operator for matching values of a specific runtime type, such as 'string', 'number', 'boolean', 'object', 'array', 'date', 'null', or 'undefined'. */
   $type?: string | string[];
   /** Modulo operator for matching values that satisfy a modulo condition. */
   $mod?: [number, number];
@@ -51,6 +54,8 @@ export type QueryOperators<T = any> = {
  * Additionally, logical operators like $and, $or, $nor, and $not can be used
  * to combine multiple query conditions.
  * The $expr operator allows the use of aggregation expressions in queries.
+ * Dotted field paths (for example 'address.city') are supported for querying
+ * nested fields; such paths are accepted through the string index signature.
  */
 export type Query<T = any> = {
   [K in keyof T]?: T[K] | QueryOperators<T[K]>;
@@ -65,6 +70,9 @@ export type Query<T = any> = {
   $not?: Query<T>;
   /** Expression-based query condition using aggregation expressions. */
   $expr?: AggregationExpression;
+} & {
+  /** Dotted-path and additional field conditions for nested field queries (for example 'address.city'). */
+  [dottedPath: string]: any;
 };
 
 /**
@@ -93,12 +101,6 @@ export type Projection<T = any> =
       [key: string]: ProjectionValue | undefined;
     })
   | null;
-
-/**
- * Index specification for query optimization.
- * Maps field paths to Map-based indexes where keys are field values and values are arrays of documents.
- */
-export type IndexSpec = Record<string, Map<any, any[]>>;
 
 /**
  * Options for the find method, including optional index hints for query optimization.
@@ -200,10 +202,10 @@ export type SkipStage = {
  * Performs a left outer join to another collection.
  */
 export type LookupStage = {
-  /** The target collection to join with. */
+  /** The target collection to join with. Accepts a Qar instance or a plain array. */
   $lookup: {
-    /** The name of the collection to join. */
-    from: string;
+    /** The target collection to join with: a Qar instance or an array of documents. */
+    from: LookupFrom;
     /** The field from the input documents to match. */
     localField: string;
     /** The field from the documents of the "from" collection to match. */
@@ -224,15 +226,15 @@ export type LookupStage = {
  * - $unwind: Deconstructs an array field from the input documents to output a document for each element.
  * - $lookup: Performs a left outer join to another collection.
  */
-export type Pipeline = Array<
-  | { $match: Query }
+export type Pipeline<T = any> = Array<
+  | { $match: Query<T> }
   | { $group: GroupStage }
-  | { $sort: Record<string, 1 | -1> }
+  | { $sort: Partial<Record<keyof T, 1 | -1>> & Record<string, 1 | -1> }
   | { $project: AggregationProjection }
   | { $limit: number }
-  | { $skip: number }
+  | SkipStage
   | { $unwind: string | UnwindOptions }
-  | { $lookup: { from: string; localField: string; foreignField: string; as: string } }
+  | LookupStage
 >;
 
 /**
@@ -258,6 +260,7 @@ export class QueryCursor<T = any> {
    * @param {T[]} [items] - The array of items to query. Defaults to an empty array.
    * @param {Query<T>} [query] - The query object specifying the criteria for matching items. Defaults to an empty query.
    * @param {Projection<T>} [projection] - The projection object specifying which fields to include or exclude in the results. Defaults to no projection (include all fields).
+   * @param {FindOptions} [options] - Optional find options including index hints. Defaults to no options.
    * @example
    * const items = [
    *  { name: 'Alice', age: 30 },
@@ -267,7 +270,7 @@ export class QueryCursor<T = any> {
    * const results = q.find({ age: { $gt: 28 } }, { name: 1 }).toArray();
    * // results: [{ name: 'Alice' }]
    */
-  constructor(items?: T[], query?: Query<T>, projection?: Projection<T>);
+  constructor(items?: T[], query?: Query<T>, projection?: Projection<T>, options?: FindOptions);
 
   /**
    * Sorts the query results based on the specified sort specification.
@@ -317,7 +320,7 @@ export class QueryCursor<T = any> {
 
   /**
    * Limits the number of items in the query results.
-   * @param n - The maximum number of items to return.
+   * @param n - The maximum number of items to return. Defaults to 0 (no limit).
    * @returns The QueryCursor instance for chaining.
    * @example
    * const items = [
@@ -329,7 +332,7 @@ export class QueryCursor<T = any> {
    * const results = q.find({}, { name: 1 }).sort({ age: 1 }).limit(2).toArray();
    * // results: [{ name: 'Bob' }, { name: 'Alice' }]
    */
-  limit(n: number): this;
+  limit(n?: number): this;
 
   /**
    * Converts the current query results to an array.
@@ -350,7 +353,8 @@ export class QueryCursor<T = any> {
    * @param items - The array of items to query.
    * @param query - The query object specifying the criteria for matching items.
    * @param projection - The projection object specifying which fields to include or exclude in the results.
-   * @returns A new QueryCursor instance initialized with the provided items, query, and projection.
+   * @param options - Optional find options including index hints.
+   * @returns A new QueryCursor instance initialized with the provided items, query, projection, and options.
    * @example
    * const items = [
    *  { name: 'Alice', age: 30 },
@@ -360,7 +364,7 @@ export class QueryCursor<T = any> {
    * const results = q.find({ age: { $gt: 28 } }, { name: 1 }).toArray();
    * // results: [{ name: 'Alice' }]
    */
-  static from<T = any>(items: T[], query?: Query<T>, projection?: Projection<T>): QueryCursor<T>;
+  static from<T = any>(items: T[], query?: Query<T>, projection?: Projection<T>, options?: FindOptions): QueryCursor<T>;
 }
 
 /**
@@ -462,8 +466,9 @@ export class Qar<T = any> {
 
   /**
    * Retrieves an array of distinct values for the specified field among items matching the given query.
-   * @param field - The field for which to retrieve distinct values.
+   * @param field - The field for which to retrieve distinct values. Supports dotted paths and an optional leading '$'.
    * @param query - Optional query to filter items before retrieving distinct values.
+   * @param options - Optional find options including index hints.
    * @returns An array of distinct values for the specified field.
    * @example
    * const items = [
@@ -479,9 +484,9 @@ export class Qar<T = any> {
    * // result: [30]
    */
   distinct<K extends keyof T>(field: K): Array<T[K]>;
-  distinct<K extends keyof T>(field: K, query: Query<T>): Array<T[K]>;
+  distinct<K extends keyof T>(field: K, query: Query<T>, options?: FindOptions): Array<T[K]>;
   distinct(field: string): any[];
-  distinct(field: string, query: Query): any[];
+  distinct(field: string, query: Query, options?: FindOptions): any[];
 
   /**
    * Performs an aggregation using the specified pipeline stages.
@@ -499,7 +504,7 @@ export class Qar<T = any> {
    * ]);
    * // results: [{ _id: 30, count: 2 }, { _id: 25, count: 1 }]
    */
-  aggregate<R = any>(pipeline?: Pipeline): R[];
+  aggregate<R = any>(pipeline?: Pipeline<T>): R[];
 
   /**
    * Converts the current query results to an array.

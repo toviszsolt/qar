@@ -183,9 +183,9 @@ users.exists({ age: { $lt: 18 } });
 users.exists({ category: 'electronics' }, { indexes: { category: index } });
 ```
 
-### `distinct(field, query?)`
+#### `distinct(field, query?, options?)`
 
-Returns an array of unique values for the specified field. Optionally filter items first with a query.
+Returns an array of unique values for the specified field. Optionally filter items first with a query, and pass index hints via `options`.
 
 ```javascript
 users.distinct('role');
@@ -202,6 +202,9 @@ users.distinct('address.city');
 // $field syntax (leading $)
 users.distinct('$role');
 // => ['user', 'admin']
+
+// With index hint for performance
+products.distinct('price', { category: 'electronics' }, { indexes: { category: categoryIndex } });
 ```
 
 #### `aggregate(pipeline)`
@@ -494,29 +497,30 @@ for (const item of items) {
 }
 
 // Use index for fast $eq lookups - 10-100x faster on large datasets
-const electronics = q.find(
-  { category: 'electronics' },  // or { category: { $eq: 'electronics' } }
-  {},
-  { indexes: { category: categoryIndex } }
-).toArray();
+const electronics = q
+  .find(
+    { category: 'electronics' }, // or { category: { $eq: 'electronics' } }
+    {},
+    { indexes: { category: categoryIndex } },
+  )
+  .toArray();
 
 // Index also works with findOne
-const firstElectronic = q.findOne(
-  { category: 'electronics' },
-  {},
-  { indexes: { category: categoryIndex } }
-);
+const firstElectronic = q.findOne({ category: 'electronics' }, {}, { indexes: { category: categoryIndex } });
 
 // Index is also used by count(), exists(), and distinct()
 q.count({ category: 'electronics' }, { indexes: { category: categoryIndex } });
+q.exists({ category: 'electronics' }, { indexes: { category: categoryIndex } });
 q.distinct('price', { category: 'electronics' }, { indexes: { category: categoryIndex } });
 ```
 
 **Notes:**
+
 - Index only works for top-level `$eq` or direct value equality (e.g., `{ field: 'value' }`)
 - Build the index once and reuse it across queries
 - The index value must be a `Map` where keys are field values and values are arrays of matching documents
-- For `distinct()` with query filter, the query must use the indexed field with `$eq`
+- Index hints are supported by `find()`, `findOne()`, `count()`, `exists()`, and `distinct()`
+- For `distinct()` with a query filter, the query must use the indexed field with `$eq` (or direct equality) for the index to be used
 
 ## Aggregation Pipeline
 
@@ -666,16 +670,16 @@ const salesReport = products.aggregate([
 
 ### Pipeline Stages
 
-| Stage | Description |
-|-------|-------------|
-| `$match` | Filter documents |
-| `$group` | Group and aggregate |
-| `$sort` | Sort documents |
-| `$project` | Reshape documents |
-| `$limit` | Limit results |
-| `$skip` | Skip N documents |
-| `$unwind` | Deconstruct array |
-| `$lookup` | Join with another collection |
+| Stage      | Description                  |
+| ---------- | ---------------------------- |
+| `$match`   | Filter documents             |
+| `$group`   | Group and aggregate          |
+| `$sort`    | Sort documents               |
+| `$project` | Reshape documents            |
+| `$limit`   | Limit results                |
+| `$skip`    | Skip N documents             |
+| `$unwind`  | Deconstruct array            |
+| `$lookup`  | Join with another collection |
 
 ### $skip Stage
 
@@ -685,7 +689,7 @@ Skips the specified number of documents.
 products.aggregate([
   { $match: { inStock: true } },
   { $sort: { price: -1 } },
-  { $skip: 5 },  // Skip top 5 most expensive
+  { $skip: 5 }, // Skip top 5 most expensive
   { $limit: 10 }, // Get next 10
 ]);
 ```
@@ -702,14 +706,14 @@ const users = new Qar(usersData);
 const ordersWithUsers = orders.aggregate([
   {
     $lookup: {
-      from: users,      // Target collection (Qar instance or array)
-      localField: 'userId',  // Field in orders
-      foreignField: '_id',   // Field in users
-      as: 'user'       // Output array field
-    }
+      from: users, // Target collection (Qar instance or array)
+      localField: 'userId', // Field in orders
+      foreignField: '_id', // Field in users
+      as: 'user', // Output array field
+    },
   },
-  { $unwind: '$user' },  // Flatten the joined array
-  { $project: { orderId: 1, 'user.name': 1, 'user.email': 1, total: 1 } }
+  { $unwind: '$user' }, // Flatten the joined array
+  { $project: { orderId: 1, 'user.name': 1, 'user.email': 1, total: 1 } },
 ]);
 ```
 

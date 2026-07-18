@@ -32,9 +32,9 @@ export default class Qar {
     return filtered.length > 0;
   }
 
-  distinct(field, query = {}) {
+  distinct(field, query = {}, options) {
     if (!field) return [];
-    const filtered = applyQuery(this._items, query);
+    const filtered = applyQuery(this._items, query, options);
     const distinctItems = new Set();
     for (const item of filtered) {
       const itemValue =
