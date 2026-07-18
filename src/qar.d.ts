@@ -1,4 +1,12 @@
 /** Type definitions for Qar - In-memory query engine for JavaScript arrays. */
+
+/** Type used for aggregation expression values in $expr queries. */
+export type AggregationExpression = Record<string, any>;
+
+/** Index specification for query optimization. Maps field paths to Map indexes. */
+export type IndexMap = Map<any, any[]>;
+export type IndexSpec = Record<string, IndexMap>;
+
 export type QueryOperators<T = any> = {
   /** Equality operator for matching values equal to the specified value. */
   $eq?: T;
@@ -27,7 +35,7 @@ export type QueryOperators<T = any> = {
   /** All operator for matching arrays that contain all the specified elements. */
   $all?: T extends any[] ? T : never;
   /** Element match operator for matching arrays that contain at least one element that matches the specified query. */
-  $elemMatch?: Partial<Record<string, any>>;
+  $elemMatch?: Query<T>;
   /** Type operator for matching values of a specific BSON type. */
   $type?: string | string[];
   /** Modulo operator for matching values that satisfy a modulo condition. */
@@ -55,8 +63,8 @@ export type Query<T = any> = {
   $nor?: Query<T>[];
   /** Logical NOT: negates the specified condition. */
   $not?: Query<T>;
-  /** Expression-based query condition. */
-  $expr?: Record<string, any>;
+  /** Expression-based query condition using aggregation expressions. */
+  $expr?: AggregationExpression;
 };
 
 /**
@@ -85,6 +93,20 @@ export type Projection<T = any> =
       [key: string]: ProjectionValue | undefined;
     })
   | null;
+
+/**
+ * Index specification for query optimization.
+ * Maps field paths to Map-based indexes where keys are field values and values are arrays of documents.
+ */
+export type IndexSpec = Record<string, Map<any, any[]>>;
+
+/**
+ * Options for the find method, including optional index hints for query optimization.
+ */
+export type FindOptions = {
+  /** Index hints for query optimization. Maps field paths to Map-based indexes. */
+  indexes?: IndexSpec;
+};
 
 /**
  * A projection value for aggregation pipeline $project stages.
@@ -165,13 +187,42 @@ export type UnwindOptions = {
 };
 
 /**
+ * A $skip stage specification for aggregation pipelines.
+ * Skips the specified number of documents.
+ */
+export type SkipStage = {
+  /** The number of documents to skip. */
+  $skip: number;
+};
+
+/**
+ * A $lookup stage specification for aggregation pipelines.
+ * Performs a left outer join to another collection.
+ */
+export type LookupStage = {
+  /** The target collection to join with. */
+  $lookup: {
+    /** The name of the collection to join. */
+    from: string;
+    /** The field from the input documents to match. */
+    localField: string;
+    /** The field from the documents of the "from" collection to match. */
+    foreignField: string;
+    /** The name of the new array field to add to the input documents. */
+    as: string;
+  };
+};
+
+/**
  * A stage in an aggregation pipeline, which can be one of the following:
  * - $match: Filters documents based on a query.
  * - $group: Groups documents by a specified identifier and applies accumulator expressions.
  * - $sort: Sorts documents by specified fields in ascending or descending order.
  * - $project: Reshapes documents by including, excluding, or adding new fields.
  * - $limit: Limits the number of documents passed to the next stage.
+ * - $skip: Skips the specified number of documents.
  * - $unwind: Deconstructs an array field from the input documents to output a document for each element.
+ * - $lookup: Performs a left outer join to another collection.
  */
 export type Pipeline = Array<
   | { $match: Query }
@@ -179,7 +230,9 @@ export type Pipeline = Array<
   | { $sort: Record<string, 1 | -1> }
   | { $project: AggregationProjection }
   | { $limit: number }
+  | { $skip: number }
   | { $unwind: string | UnwindOptions }
+  | { $lookup: { from: string; localField: string; foreignField: string; as: string } }
 >;
 
 /**
@@ -264,8 +317,8 @@ export class QueryCursor<T = any> {
 
   /**
    * Limits the number of items in the query results.
-   * @param n - The maximum number of items to return. If not specified, returns all items.
-   * @returns The QueryCursor instance for chaining if n is specified, or an array of items if n is not specified.
+   * @param n - The maximum number of items to return.
+   * @returns The QueryCursor instance for chaining.
    * @example
    * const items = [
    *  { name: 'Alice', age: 30 },
@@ -276,9 +329,7 @@ export class QueryCursor<T = any> {
    * const results = q.find({}, { name: 1 }).sort({ age: 1 }).limit(2).toArray();
    * // results: [{ name: 'Bob' }, { name: 'Alice' }]
    */
-  limit(): T[];
   limit(n: number): this;
-  limit(n?: number): this | T[];
 
   /**
    * Converts the current query results to an array.
@@ -347,6 +398,7 @@ export class Qar<T = any> {
    * Finds items matching the given query and projection.
    * @param query - The query object specifying the criteria for matching items.
    * @param projection - The projection object specifying which fields to include or exclude in the results.
+   * @param options - Optional find options including index hints.
    * @returns A QueryCursor that can be further refined with sorting, skipping, and limiting.
    * @example
    * const items = [
@@ -357,12 +409,13 @@ export class Qar<T = any> {
    * const results = q.find({ age: { $gt: 28 } }, { name: 1 }).toArray();
    * // results: [{ name: 'Alice' }]
    */
-  find(query?: Query<T>, projection?: Projection<T>): QueryCursor<T>;
+  find(query?: Query<T>, projection?: Projection<T>, options?: FindOptions): QueryCursor<T>;
 
   /**
    * Finds the first item matching the given query and projection.
    * @param query - The query object specifying the criteria for matching the item.
    * @param projection - The projection object specifying which fields to include or exclude in the result.
+   * @param options - Optional find options including index hints.
    * @returns The first matching item, or null if no match is found.
    * @example
    * const items = [
@@ -373,11 +426,12 @@ export class Qar<T = any> {
    * const result = q.findOne({ age: { $gt: 28 } }, { name: 1 });
    * // result: { name: 'Alice' }
    */
-  findOne(query?: Query<T>, projection?: Projection<T>): T | null;
+  findOne(query?: Query<T>, projection?: Projection<T>, options?: FindOptions): T | null;
 
   /**
    * Counts the number of items matching the given query.
    * @param query - The query object specifying the criteria for matching items.
+   * @param options - Optional find options including index hints.
    * @returns The count of matching items.
    * @example
    * const items = [
@@ -388,11 +442,12 @@ export class Qar<T = any> {
    * const result = q.count({ age: { $gt: 28 } });
    * // result: 1
    */
-  count(query?: Query<T>): number;
+  count(query?: Query<T>, options?: FindOptions): number;
 
   /**
    * Checks if any items match the given query.
    * @param query - The query object specifying the criteria for matching items.
+   * @param options - Optional find options including index hints.
    * @returns True if at least one item matches the query, false otherwise.
    * @example
    * const items = [
@@ -403,11 +458,12 @@ export class Qar<T = any> {
    * const result = q.exists({ age: { $gt: 28 } });
    * // result: true
    */
-  exists(query?: Query<T>): boolean;
+  exists(query?: Query<T>, options?: FindOptions): boolean;
 
   /**
    * Retrieves an array of distinct values for the specified field among items matching the given query.
    * @param field - The field for which to retrieve distinct values.
+   * @param query - Optional query to filter items before retrieving distinct values.
    * @returns An array of distinct values for the specified field.
    * @example
    * const items = [
@@ -418,9 +474,14 @@ export class Qar<T = any> {
    * const q = new Qar(items);
    * const result = q.distinct('age');
    * // result: [30, 25]
+   * @example
+   * const result = q.distinct('age', { name: 'Alice' });
+   * // result: [30]
    */
   distinct<K extends keyof T>(field: K): Array<T[K]>;
+  distinct<K extends keyof T>(field: K, query: Query<T>): Array<T[K]>;
   distinct(field: string): any[];
+  distinct(field: string, query: Query): any[];
 
   /**
    * Performs an aggregation using the specified pipeline stages.

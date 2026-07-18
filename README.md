@@ -122,7 +122,7 @@ Creates a new Qar instance with your array of objects.
 
 ### Methods
 
-#### `find(query, projection?)`
+#### `find(query, projection?, options?)`
 
 Returns a cursor for chaining operations. Call `.toArray()` to execute.
 
@@ -133,13 +133,18 @@ users.find({ age: { $gte: 30 } }).toArray();
 // With projection
 users.find({ role: 'admin' }, { name: 1, email: 1 }).toArray();
 
+// With index hints for performance (large datasets)
+const index = new Map();
+index.set('electronics', [...electronicsProducts]);
+users.find({ category: 'electronics' }, {}, { indexes: { category: index } }).toArray();
+
 // Chainable
 users.find({ active: true }).sort({ name: 1 }).skip(10).limit(5).toArray();
 ```
 
-#### `findOne(query, projection?)`
+#### `findOne(query, projection?, options?)`
 
-Returns the first object matching the query, or `null` if not found.
+Returns the first object matching the query, or `null` if not found. Supports the same options as `find()`.
 
 ```javascript
 users.findOne({ name: 'Alice' });
@@ -147,36 +152,56 @@ users.findOne({ name: 'Alice' });
 
 users.findOne({ role: 'admin' }, { name: 1, email: 1 });
 // => { name: 'Bob', email: 'bob@example.com' }
+
+// With index hint
+users.findOne({ category: 'electronics' }, {}, { indexes: { category: index } });
 ```
 
-#### `count(query)`
+#### `count(query, options?)`
 
 Returns the number of objects matching the query.
 
 ```javascript
 users.count({ role: 'admin' });
 // => 1
+
+// With index hint for performance
+const index = new Map();
+index.set('electronics', [...electronicsProducts]);
+users.count({ category: 'electronics' }, { indexes: { category: index } });
 ```
 
-#### `exists(query)`
+#### `exists(query, options?)`
 
 Returns `true` if at least one object matches the query, `false` otherwise.
 
 ```javascript
 users.exists({ age: { $lt: 18 } });
 // => false
+
+// With index hint
+users.exists({ category: 'electronics' }, { indexes: { category: index } });
 ```
 
-#### `distinct(field)`
+### `distinct(field, query?)`
 
-Returns an array of unique values for the specified field.
+Returns an array of unique values for the specified field. Optionally filter items first with a query.
 
 ```javascript
 users.distinct('role');
 // => ['user', 'admin']
 
-products.distinct('category');
-// => ['electronics', 'clothing', 'books']
+// With query filter - only distinct categories for active products
+products.distinct('category', { active: true });
+// => ['electronics', 'clothing']
+
+// Also supports dotted paths
+users.distinct('address.city');
+// => ['New York', 'Los Angeles']
+
+// $field syntax (leading $)
+users.distinct('$role');
+// => ['user', 'admin']
 ```
 
 #### `aggregate(pipeline)`
@@ -446,6 +471,53 @@ posts.find(
 );
 ```
 
+## Index Optimization (Large Datasets)
+
+For large arrays (10,000+ items), you can dramatically speed up `$eq` and direct equality queries by providing a pre-built Map index.
+
+```javascript
+const items = [
+  { id: 1, category: 'electronics', price: 299 },
+  { id: 2, category: 'books', price: 19 },
+  { id: 3, category: 'electronics', price: 499 },
+  // ... 100,000 more items
+];
+
+const q = new Qar(items);
+
+// Build index once (e.g., at app startup)
+const categoryIndex = new Map();
+for (const item of items) {
+  const key = item.category;
+  if (!categoryIndex.has(key)) categoryIndex.set(key, []);
+  categoryIndex.get(key).push(item);
+}
+
+// Use index for fast $eq lookups - 10-100x faster on large datasets
+const electronics = q.find(
+  { category: 'electronics' },  // or { category: { $eq: 'electronics' } }
+  {},
+  { indexes: { category: categoryIndex } }
+).toArray();
+
+// Index also works with findOne
+const firstElectronic = q.findOne(
+  { category: 'electronics' },
+  {},
+  { indexes: { category: categoryIndex } }
+);
+
+// Index is also used by count(), exists(), and distinct()
+q.count({ category: 'electronics' }, { indexes: { category: categoryIndex } });
+q.distinct('price', { category: 'electronics' }, { indexes: { category: categoryIndex } });
+```
+
+**Notes:**
+- Index only works for top-level `$eq` or direct value equality (e.g., `{ field: 'value' }`)
+- Build the index once and reuse it across queries
+- The index value must be a `Map` where keys are field values and values are arrays of matching documents
+- For `distinct()` with query filter, the query must use the indexed field with `$eq`
+
 ## Aggregation Pipeline
 
 Perform advanced data processing with aggregation pipelines.
@@ -584,10 +656,64 @@ const salesReport = products.aggregate([
   // Sort by revenue
   { $sort: { totalRevenue: -1 } },
 
+  // Skip first 2 categories
+  { $skip: 2 },
+
   // Top 10 categories
   { $limit: 10 },
 ]);
 ```
+
+### Pipeline Stages
+
+| Stage | Description |
+|-------|-------------|
+| `$match` | Filter documents |
+| `$group` | Group and aggregate |
+| `$sort` | Sort documents |
+| `$project` | Reshape documents |
+| `$limit` | Limit results |
+| `$skip` | Skip N documents |
+| `$unwind` | Deconstruct array |
+| `$lookup` | Join with another collection |
+
+### $skip Stage
+
+Skips the specified number of documents.
+
+```javascript
+products.aggregate([
+  { $match: { inStock: true } },
+  { $sort: { price: -1 } },
+  { $skip: 5 },  // Skip top 5 most expensive
+  { $limit: 10 }, // Get next 10
+]);
+```
+
+### $lookup Stage (Join)
+
+Performs a left outer join to another collection.
+
+```javascript
+const orders = new Qar(ordersData);
+const users = new Qar(usersData);
+
+// Join orders with users
+const ordersWithUsers = orders.aggregate([
+  {
+    $lookup: {
+      from: users,      // Target collection (Qar instance or array)
+      localField: 'userId',  // Field in orders
+      foreignField: '_id',   // Field in users
+      as: 'user'       // Output array field
+    }
+  },
+  { $unwind: '$user' },  // Flatten the joined array
+  { $project: { orderId: 1, 'user.name': 1, 'user.email': 1, total: 1 } }
+]);
+```
+
+> **Note:** The `from` parameter can be either a Qar instance or a plain array of objects.
 
 ## Examples
 

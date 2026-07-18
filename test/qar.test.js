@@ -67,4 +67,39 @@ describe('Qar convenience methods', () => {
     for (const r of res) m[r._id] = r.count;
     expect(m['a']).toBe(2);
   });
+
+  test('find with index option uses index for $eq lookup', () => {
+    const items = [
+      { id: 1, v: 'x' },
+      { id: 2, v: 'y' },
+    ];
+    const index = new Map();
+    index.set('x', [items[0]]);
+    const q = new Qar(items);
+    const res = q.find({ v: 'x' }, {}, { indexes: { v: index } }).toArray();
+    expect(res).toEqual([items[0]]);
+  });
+
+  test('findOne with index option uses index', () => {
+    const items = [
+      { id: 1, v: 'x' },
+      { id: 2, v: 'y' },
+    ];
+    const index = new Map();
+    index.set('x', [items[0]]);
+    const q = new Qar(items);
+    const res = q.findOne({ v: 'x' }, {}, { indexes: { v: index } });
+    expect(res).toEqual(items[0]);
+  });
+
+  test('distinct with query filter', () => {
+    const items = [
+      { id: 1, cat: 'a', active: true },
+      { id: 2, cat: 'b', active: true },
+      { id: 3, cat: 'a', active: false },
+    ];
+    const q = new Qar(items);
+    expect(q.distinct('cat', { active: true }).sort()).toEqual(['a', 'b'].sort());
+    expect(q.distinct('cat', { active: false }).sort()).toEqual(['a'].sort());
+  });
 });

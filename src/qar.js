@@ -14,27 +14,29 @@ export default class Qar {
     this._items = items;
   }
 
-  find(query = {}, projection) {
-    return QueryCursor.from(this._items, query, projection);
+  find(query = {}, projection, options) {
+    return QueryCursor.from(this._items, query, projection, options);
   }
 
-  findOne(query = {}, projection) {
-    const res = this.find(query, projection).limit(1).toArray();
+  findOne(query = {}, projection, options) {
+    const res = this.find(query, projection, options).limit(1).toArray();
     return res.length > 0 ? res[0] : null;
   }
 
-  count(query = {}) {
-    return applyQuery(this._items, query).length;
+  count(query = {}, options) {
+    return applyQuery(this._items, query, options).length;
   }
 
-  exists(query = {}) {
-    return this._items.some((item) => matches(item, query));
+  exists(query = {}, options) {
+    const filtered = applyQuery(this._items, query, options);
+    return filtered.length > 0;
   }
 
-  distinct(field) {
+  distinct(field, query = {}) {
     if (!field) return [];
+    const filtered = applyQuery(this._items, query);
     const distinctItems = new Set();
-    for (const item of this._items) {
+    for (const item of filtered) {
       const itemValue =
         typeOf(field) === 'string' && field.startsWith('$')
           ? objValueResolve(item, field.slice(1))

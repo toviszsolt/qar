@@ -18,7 +18,7 @@ const users = [
     skills: ['JavaScript', 'React', 'Node.js'],
     address: { street: '123 Main St', zip: 10001 },
     active: true,
-    joinedAt: new Date('2022-03-15'),
+    joinedAt: new Date('2022-03-15').toJSON(),
   },
   {
     _id: 2,
@@ -30,7 +30,7 @@ const users = [
     skills: ['Python', 'Django', 'PostgreSQL'],
     address: { street: '456 Oak Ave', zip: 2108 },
     active: true,
-    joinedAt: new Date('2020-07-22'),
+    joinedAt: new Date('2020-07-22').toJSON(),
   },
   {
     _id: 3,
@@ -42,7 +42,7 @@ const users = [
     skills: ['Java', 'Spring', 'Kubernetes'],
     address: { street: '789 Elm St', zip: 60601 },
     active: false,
-    joinedAt: new Date('2018-01-10'),
+    joinedAt: new Date('2018-01-10').toJSON(),
   },
   {
     _id: 4,
@@ -54,7 +54,7 @@ const users = [
     skills: ['JavaScript', 'Vue.js', 'TypeScript'],
     address: { street: '321 Park Ave', zip: 10016 },
     active: true,
-    joinedAt: new Date('2021-11-03'),
+    joinedAt: new Date('2021-11-03').toJSON(),
   },
   {
     _id: 5,
@@ -66,7 +66,7 @@ const users = [
     skills: ['C#', '.NET', 'Azure'],
     address: { street: '555 Pine St', zip: 98101 },
     active: true,
-    joinedAt: new Date('2019-05-18'),
+    joinedAt: new Date('2019-05-18').toJSON(),
   },
   {
     _id: 6,
@@ -78,7 +78,7 @@ const users = [
     skills: ['JavaScript', 'React', 'CSS'],
     address: { street: '777 Broadway', zip: 10003 },
     active: true,
-    joinedAt: new Date('2023-02-01'),
+    joinedAt: new Date('2023-02-01').toJSON(),
   },
 ];
 
@@ -86,11 +86,15 @@ const data = new Qar(users);
 
 console.log('\n📊 Test dataset created:', users.length, 'users\n');
 
-let passed = 0, failed = 0;
+let passed = 0,
+  failed = 0;
 const check = (desc, actual, expected) => {
   const ok = JSON.stringify(actual) === JSON.stringify(expected);
   if (ok) passed++;
-  else { failed++; console.log(`   ❌ ${desc}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`); }
+  else {
+    failed++;
+    console.log(`   ❌ ${desc}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+  }
 };
 
 // ============================================================================
@@ -113,7 +117,7 @@ const newYorkUsers = data.find({ city: 'New York' }).toArray();
 console.log(`   Results: ${newYorkUsers.length}`);
 newYorkUsers.forEach((u) => console.log(`   - ${u.name}, ${u.city}`));
 check('NY count', newYorkUsers.length, 3);
-check('NY names', newYorkUsers.map(u => u.name).sort(), ['Eva Brown', 'John Smith', 'Sophia Martinez']);
+check('NY names', newYorkUsers.map((u) => u.name).sort(), ['Eva Brown', 'John Smith', 'Sophia Martinez']);
 
 // FindOne
 console.log('\n3️⃣  FindOne (age: 28):');
@@ -146,39 +150,44 @@ console.log('\n1️⃣  $gte - Salary >= 80000:');
 const highSalary = data.find({ salary: { $gte: 80000 } }).toArray();
 highSalary.forEach((u) => console.log(`   - ${u.name}: $${u.salary.toLocaleString('en-US')}`));
 check('$gte 80k count', highSalary.length, 3);
-check('$gte 80k names', highSalary.map(u => u.name).sort(), ['Anna Johnson', 'Gabriel Davis', 'Peter Williams']);
+check('$gte 80k names', highSalary.map((u) => u.name).sort(), ['Anna Johnson', 'Gabriel Davis', 'Peter Williams']);
 
 console.log('\n2️⃣  $lt - Age < 30:');
 const young = data.find({ age: { $lt: 30 } }).toArray();
 young.forEach((u) => console.log(`   - ${u.name}, ${u.age} years old`));
 check('$lt 30 count', young.length, 3);
-check('$lt 30 names', young.map(u => u.name).sort(), ['Eva Brown', 'John Smith', 'Sophia Martinez']);
+check('$lt 30 names', young.map((u) => u.name).sort(), ['Eva Brown', 'John Smith', 'Sophia Martinez']);
 
 console.log('\n3️⃣  Combined: 30 <= age <= 40:');
 const midAge = data.find({ age: { $gte: 30, $lte: 40 } }).toArray();
 midAge.forEach((u) => console.log(`   - ${u.name}, ${u.age} years old`));
 check('$gte 30 $lte 40 count', midAge.length, 2);
-check('$gte 30 $lte 40 names', midAge.map(u => u.name).sort(), ['Anna Johnson', 'Gabriel Davis']);
+check('$gte 30 $lte 40 names', midAge.map((u) => u.name).sort(), ['Anna Johnson', 'Gabriel Davis']);
 
 // $ne
 console.log('\n4️⃣  $ne - Not New York:');
 const notNewYork = data.find({ city: { $ne: 'New York' } }).toArray();
 notNewYork.forEach((u) => console.log(`   - ${u.name}: ${u.city}`));
 check('$ne NY count', notNewYork.length, 3);
-check('$ne NY names', notNewYork.map(u => u.name).sort(), ['Anna Johnson', 'Gabriel Davis', 'Peter Williams']);
+check('$ne NY names', notNewYork.map((u) => u.name).sort(), ['Anna Johnson', 'Gabriel Davis', 'Peter Williams']);
 
 // $in, $nin
 console.log('\n5️⃣  $in - City in [New York, Chicago]:');
 const inCities = data.find({ city: { $in: ['New York', 'Chicago'] } }).toArray();
 inCities.forEach((u) => console.log(`   - ${u.name}: ${u.city}`));
 check('$in [NY,Chicago] count', inCities.length, 4);
-check('$in [NY,Chicago] names', inCities.map(u => u.name).sort(), ['Eva Brown', 'John Smith', 'Peter Williams', 'Sophia Martinez']);
+check('$in [NY,Chicago] names', inCities.map((u) => u.name).sort(), [
+  'Eva Brown',
+  'John Smith',
+  'Peter Williams',
+  'Sophia Martinez',
+]);
 
 console.log('\n6️⃣  $nin - City not in [New York]:');
 const notInNewYork = data.find({ city: { $nin: ['New York'] } }).toArray();
 notInNewYork.forEach((u) => console.log(`   - ${u.name}: ${u.city}`));
 check('$nin [NY] count', notInNewYork.length, 3);
-check('$nin [NY] names', notInNewYork.map(u => u.name).sort(), ['Anna Johnson', 'Gabriel Davis', 'Peter Williams']);
+check('$nin [NY] names', notInNewYork.map((u) => u.name).sort(), ['Anna Johnson', 'Gabriel Davis', 'Peter Williams']);
 
 // ============================================================================
 // 4. LOGICAL OPERATORS
@@ -197,7 +206,7 @@ const andQuery = data
   .toArray();
 andQuery.forEach((u) => console.log(`   - ${u.name}, ${u.age} years old, ${u.city}`));
 check('$and count', andQuery.length, 2);
-check('$and names', andQuery.map(u => u.name).sort(), ['Eva Brown', 'John Smith']);
+check('$and names', andQuery.map((u) => u.name).sort(), ['Eva Brown', 'John Smith']);
 
 // $or
 console.log('\n2️⃣  $or - age < 27 OR salary > 90000:');
@@ -208,7 +217,7 @@ const orQuery = data
   .toArray();
 orQuery.forEach((u) => console.log(`   - ${u.name}, ${u.age} years old, $${u.salary}`));
 check('$or count', orQuery.length, 2);
-check('$or names', orQuery.map(u => u.name).sort(), ['Peter Williams', 'Sophia Martinez']);
+check('$or names', orQuery.map((u) => u.name).sort(), ['Peter Williams', 'Sophia Martinez']);
 
 // $not
 console.log('\n3️⃣  $not - NOT active:');
@@ -226,7 +235,7 @@ const norQuery = data
   .toArray();
 norQuery.forEach((u) => console.log(`   - ${u.name}, ${u.age} years old, ${u.city}`));
 check('$nor count', norQuery.length, 3);
-check('$nor names', norQuery.map(u => u.name).sort(), ['Anna Johnson', 'Gabriel Davis', 'Peter Williams']);
+check('$nor names', norQuery.map((u) => u.name).sort(), ['Anna Johnson', 'Gabriel Davis', 'Peter Williams']);
 
 // ============================================================================
 // 5. ARRAY OPERATORS
@@ -247,7 +256,7 @@ console.log('\n2️⃣  $all - JavaScript AND React:');
 const jsReact = data.find({ skills: { $all: ['JavaScript', 'React'] } }).toArray();
 jsReact.forEach((u) => console.log(`   - ${u.name}: ${u.skills.join(', ')}`));
 check('$all JS+React count', jsReact.length, 2);
-check('$all JS+React names', jsReact.map(u => u.name).sort(), ['John Smith', 'Sophia Martinez']);
+check('$all JS+React names', jsReact.map((u) => u.name).sort(), ['John Smith', 'Sophia Martinez']);
 
 // $in array
 console.log('\n3️⃣  $in - Has Python skill:');
@@ -281,7 +290,13 @@ console.log('\n2️⃣  Nested $gt - address.zip > 10000:');
 const highZip = data.find({ 'address.zip': { $gt: 10000 } }).toArray();
 highZip.forEach((u) => console.log(`   - ${u.name}: ${u.address.street}, ${u.address.zip}`));
 check('address.zip >10000 count', highZip.length, 5);
-check('address.zip >10000 names', highZip.map(u => u.name).sort(), ['Eva Brown', 'Gabriel Davis', 'John Smith', 'Peter Williams', 'Sophia Martinez']);
+check('address.zip >10000 names', highZip.map((u) => u.name).sort(), [
+  'Eva Brown',
+  'Gabriel Davis',
+  'John Smith',
+  'Peter Williams',
+  'Sophia Martinez',
+]);
 
 // ============================================================================
 // 7. REGEX SEARCH
@@ -300,7 +315,7 @@ console.log('\n2️⃣  Name contains "John" or "Peter":');
 const nameRegex = data.find({ name: { $regex: 'John|Peter' } }).toArray();
 nameRegex.forEach((u) => console.log(`   - ${u.name}`));
 check('$regex John|Peter count', nameRegex.length, 3);
-check('$regex John|Peter names', nameRegex.map(u => u.name).sort(), ['Anna Johnson', 'John Smith', 'Peter Williams']);
+check('$regex John|Peter names', nameRegex.map((u) => u.name).sort(), ['Anna Johnson', 'John Smith', 'Peter Williams']);
 
 console.log('\n3️⃣  Case-insensitive - name contains "smith":');
 const caseInsensitive = data
@@ -346,18 +361,22 @@ console.log('═'.repeat(60));
 console.log('\n1️⃣  Sort - by age (ascending):');
 const sorted = data.find().sort({ age: 1 }).toArray();
 sorted.forEach((u) => console.log(`   - ${u.name}, ${u.age} years old`));
-check('sort asc names', sorted.map(u => u.name).join(), 'Sophia Martinez,John Smith,Eva Brown,Anna Johnson,Gabriel Davis,Peter Williams');
+check(
+  'sort asc names',
+  sorted.map((u) => u.name).join(),
+  'Sophia Martinez,John Smith,Eva Brown,Anna Johnson,Gabriel Davis,Peter Williams',
+);
 
 console.log('\n2️⃣  Sort - by salary (descending):');
 const sortedDesc = data.find().sort({ salary: -1 }).limit(3).toArray();
 sortedDesc.forEach((u) => console.log(`   - ${u.name}: $${u.salary.toLocaleString('en-US')}`));
-check('sort desc limit 3 names', sortedDesc.map(u => u.name).join(), 'Peter Williams,Gabriel Davis,Anna Johnson');
+check('sort desc limit 3 names', sortedDesc.map((u) => u.name).join(), 'Peter Williams,Gabriel Davis,Anna Johnson');
 
 // Skip and Limit
 console.log('\n3️⃣  Skip & Limit - pagination (skip: 2, limit: 2):');
 const paginated = data.find().sort({ age: 1 }).skip(2).limit(2).toArray();
 paginated.forEach((u) => console.log(`   - ${u.name}, ${u.age} years old`));
-check('pagination names', paginated.map(u => u.name).join(), 'Eva Brown,Anna Johnson');
+check('pagination names', paginated.map((u) => u.name).join(), 'Eva Brown,Anna Johnson');
 
 // Chainable
 console.log('\n4️⃣  Complex chaining:');
@@ -403,7 +422,7 @@ console.log('═'.repeat(60));
 console.log('\n1️⃣  Group by city (count):');
 const groupByCity = data.aggregate([{ $group: { _id: '$city', count: { $sum: 1 } } }, { $sort: { count: -1 } }]);
 groupByCity.forEach((g) => console.log(`   - ${g._id}: ${g.count} users`));
-check('group NY count', groupByCity.find(g => g._id === 'New York').count, 3);
+check('group NY count', groupByCity.find((g) => g._id === 'New York').count, 3);
 check('group total', groupByCity.length, 4);
 
 console.log('\n2️⃣  Average salary by city:');
@@ -420,8 +439,8 @@ const avgSalaryByCity = data.aggregate([
 avgSalaryByCity.forEach((g) =>
   console.log(`   - ${g._id}: $${Math.round(g.avgSalary).toLocaleString('en-US')} (${g.count} users)`),
 );
-check('avg Chicago', Math.round(avgSalaryByCity.find(g => g._id === 'Chicago').avgSalary), 95000);
-check('avg NY', Math.round(avgSalaryByCity.find(g => g._id === 'New York').avgSalary), 72667);
+check('avg Chicago', Math.round(avgSalaryByCity.find((g) => g._id === 'Chicago').avgSalary), 95000);
+check('avg NY', Math.round(avgSalaryByCity.find((g) => g._id === 'New York').avgSalary), 72667);
 
 console.log('\n3️⃣  Min and Max salary:');
 const salaryStats = data.aggregate([
@@ -458,7 +477,7 @@ const skillsByCity = data.aggregate([
   { $sort: { count: -1 } },
 ]);
 skillsByCity.forEach((s) => console.log(`   - ${s._id}: ${s.count}x (${s.users.join(', ')})`));
-check('skills JS count in NY', skillsByCity.find(s => s._id === 'JavaScript').count, 3);
+check('skills JS count in NY', skillsByCity.find((s) => s._id === 'JavaScript').count, 3);
 
 console.log('\n5️⃣  $unwind - expand skills:');
 const unwound = data.aggregate([
@@ -522,7 +541,14 @@ const longNames = data
   .toArray();
 longNames.forEach((u) => console.log(`   - ${u.name} (${u.name.length} characters)`));
 check('$expr name length >10 count', longNames.length, 4);
-check('$expr name length >10 names', longNames.map(u => u.name).sort().join(), 'Anna Johnson,Gabriel Davis,Peter Williams,Sophia Martinez');
+check(
+  '$expr name length >10 names',
+  longNames
+    .map((u) => u.name)
+    .sort()
+    .join(),
+  'Anna Johnson,Gabriel Davis,Peter Williams,Sophia Martinez',
+);
 
 console.log('\n3️⃣  Email contains name (lowercase):');
 const emailContainsName = data
@@ -551,14 +577,14 @@ const joined2022 = data.aggregate([
   {
     $match: {
       joinedAt: {
-        $gte: new Date('2022-01-01'),
-        $lt: new Date('2023-01-01'),
+        $gte: new Date('2022-01-01').toJSON(),
+        $lt: new Date('2023-01-01').toJSON(),
       },
     },
   },
   { $project: { name: 1, joinedAt: 1 } },
 ]);
-joined2022.forEach((u) => console.log(`   - ${u.name}: ${u.joinedAt.toLocaleDateString('en-US')}`));
+joined2022.forEach((u) => console.log(`   - ${u.name}: ${u.joinedAt}`));
 check('joined 2022 count', joined2022.length, 1);
 check('joined 2022 name', joined2022[0].name, 'John Smith');
 
@@ -652,10 +678,10 @@ const salaryBands = data.aggregate([
 ]);
 salaryBands.forEach((u) => console.log(`   - ${u.name}: $${u.salary.toLocaleString('en-US')} (${u.band})`));
 check('$switch count', salaryBands.length, 6);
-check('$switch Low', salaryBands.find(u => u.name === 'Sophia Martinez').band, 'Low');
-check('$switch Medium', salaryBands.find(u => u.name === 'John Smith').band, 'Medium');
-check('$switch High', salaryBands.find(u => u.name === 'Anna Johnson').band, 'High');
-check('$switch Very High', salaryBands.find(u => u.name === 'Peter Williams').band, 'Very High');
+check('$switch Low', salaryBands.find((u) => u.name === 'Sophia Martinez').band, 'Low');
+check('$switch Medium', salaryBands.find((u) => u.name === 'John Smith').band, 'Medium');
+check('$switch High', salaryBands.find((u) => u.name === 'Anna Johnson').band, 'High');
+check('$switch Very High', salaryBands.find((u) => u.name === 'Peter Williams').band, 'Very High');
 
 // ============================================================================
 // 15. ARRAY AGGREGATION OPERATIONS
@@ -683,7 +709,14 @@ const jsSkills = data.aggregate([
 ]);
 jsSkills.forEach((u) => console.log(`   - ${u.name}: ${u.jsSkills.join(', ')}`));
 check('$filter count', jsSkills.length, 3);
-check('$filter names', jsSkills.map(u => u.name).sort().join(), 'Eva Brown,John Smith,Sophia Martinez');
+check(
+  '$filter names',
+  jsSkills
+    .map((u) => u.name)
+    .sort()
+    .join(),
+  'Eva Brown,John Smith,Sophia Martinez',
+);
 
 console.log('\n2️⃣  $map - skills lowercase:');
 const lowerSkills = data.aggregate([
@@ -739,7 +772,11 @@ const skillCounts = data.aggregate([
 ]);
 skillCounts.forEach((u) => console.log(`   - ${u.name}: ${u.skillCount} skills`));
 check('$size count', skillCounts.length, 6);
-check('$size all 3', skillCounts.every(u => u.skillCount === 3), true);
+check(
+  '$size all 3',
+  skillCounts.every((u) => u.skillCount === 3),
+  true,
+);
 
 // ============================================================================
 // 16. TYPE CONVERSION
@@ -806,7 +843,14 @@ const complexLogic = data
   .toArray();
 complexLogic.forEach((u) => console.log(`   - ${u.name}`));
 check('complex logic count', complexLogic.length, 3);
-check('complex logic names', complexLogic.map(u => u.name).sort().join(), 'Eva Brown,John Smith,Peter Williams');
+check(
+  'complex logic names',
+  complexLogic
+    .map((u) => u.name)
+    .sort()
+    .join(),
+  'Eva Brown,John Smith,Peter Williams',
+);
 
 console.log('\n4️⃣  $type check:');
 const stringFields = data.find({ name: { $type: 'string' } }).toArray();
@@ -817,7 +861,14 @@ console.log('\n5️⃣  $mod - even ages:');
 const evenAge = data.find({ age: { $mod: [2, 0] } }).toArray();
 evenAge.forEach((u) => console.log(`   - ${u.name}: ${u.age} years old`));
 check('$mod even ages count', evenAge.length, 4);
-check('$mod even ages names', evenAge.map(u => u.name).sort().join(), 'Anna Johnson,Gabriel Davis,John Smith,Peter Williams');
+check(
+  '$mod even ages names',
+  evenAge
+    .map((u) => u.name)
+    .sort()
+    .join(),
+  'Anna Johnson,Gabriel Davis,John Smith,Peter Williams',
+);
 
 // ============================================================================
 // 18. PERFORMANCE TEST

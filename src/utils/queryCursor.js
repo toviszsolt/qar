@@ -4,10 +4,11 @@ import { projectCollection } from './projection.js';
 import { typeOf } from './typeOf.js';
 
 class QueryCursor {
-  constructor(items = [], query = {}, projection = null) {
+  constructor(items = [], query = {}, projection = null, options = {}) {
     this._items = items || [];
     this._query = query || {};
     this._projection = projection || null;
+    this._options = options || {};
     this._sortSpec = null;
     this._skip = 0;
     this._limit = null;
@@ -35,7 +36,7 @@ class QueryCursor {
   }
 
   toArray() {
-    const queried = applyQuery(this._items, this._query);
+    const queried = applyQuery(this._items, this._query, this._options);
     const sorted = this._sortSpec ? sortDocuments(queried, this._sortSpec) : queried;
     const skipped = this._skip && this._skip > 0 ? sorted.slice(this._skip) : sorted;
     const limited = this._limit != null ? skipped.slice(0, this._limit) : skipped;
@@ -43,8 +44,8 @@ class QueryCursor {
     return projected;
   }
 
-  static from(items, query = {}, projection = null) {
-    return new QueryCursor(items, query, projection);
+  static from(items, query = {}, projection = null, options = {}) {
+    return new QueryCursor(items, query, projection, options);
   }
 }
 

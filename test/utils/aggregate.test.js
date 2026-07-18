@@ -409,4 +409,83 @@ describe('aggregate extended', () => {
     expect(Object.prototype.hasOwnProperty.call(Object.prototype, 'x')).toBe(false);
     expect(res).toEqual([{}]);
   });
+
+  test('$skip stage skips N documents', () => {
+    const data = new Qar([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }]);
+    const res = data.aggregate([{ $skip: 2 }, { $limit: 2 }]);
+    expect(res.length).toBe(2);
+    expect(res[0].id).toBe(3);
+    expect(res[1].id).toBe(4);
+  });
+
+  test('$skip handles string and zero', () => {
+    const data = new Qar([{ id: 1 }, { id: 2 }]);
+    expect(data.aggregate([{ $skip: '1' }])[0].id).toBe(2);
+    expect(data.aggregate([{ $skip: 0 }]).length).toBe(2);
+    expect(data.aggregate([{ $skip: -5 }]).length).toBe(2);
+  });
+
+  test('$lookup stage performs left join', () => {
+    const orders = new Qar([{ orderId: 1, userId: 10 }, { orderId: 2, userId: 20 }]);
+    const users = new Qar([{ _id: 10, name: 'Alice' }, { _id: 20, name: 'Bob' }]);
+    const res = orders.aggregate([
+      { $lookup: { from: users, localField: 'userId', foreignField: '_id', as: 'user' } },
+    ]);
+    expect(res.length).toBe(2);
+    expect(res[0].user).toEqual([{ _id: 10, name: 'Alice' }]);
+    expect(res[1].user).toEqual([{ _id: 20, name: 'Bob' }]);
+  });
+
+  test('$lookup with array as from', () => {
+    const orders = new Qar([{ orderId: 1, userId: 10 }]);
+    const users = [{ _id: 10, name: 'Alice' }];
+    const res = orders.aggregate([{ $lookup: { from: users, localField: 'userId', foreignField: '_id', as: 'user' } }]);
+    expect(res[0].user).toEqual([{ _id: 10, name: 'Alice' }]);
+  });
+
+  test('$lookup with missing local field returns empty array', () => {
+    const orders = new Qar([{ orderId: 1 }]);
+    const users = new Qar([{ _id: 10, name: 'Alice' }]);
+    const res = orders.aggregate([{ $lookup: { from: users, localField: 'userId', foreignField: '_id', as: 'user' } }]);
+    expect(res[0].user).toEqual([]);
+  });
+
+  test('$lookup with invalid spec returns original docs', () => {
+    const orders = new Qar([{ orderId: 1, userId: 10 }]);
+    const users = new Qar([{ _id: 10, name: 'Alice' }]);
+    const res = orders.aggregate([{ $lookup: { from: users } }]);
+    expect(res[0].orderId).toBe(1);
+    expect(res[0].user).toBeUndefined();
+  });
+
+  test('$lookup with Qar instance uses _items', () => {
+    const orders = new Qar([{ orderId: 1, userId: 10 }]);
+    const users = new Qar([{ _id: 10, name: 'Alice' }]);
+    // from is Qar instance, should use users._items
+    const res = orders.aggregate([{ $lookup: { from: users, localField: 'userId', foreignField: '_id', as: 'user' } }]);
+    expect(res[0].user).toEqual([{ _id: 10, name: 'Alice' }]);
+  });
+
+  test('$lookup with undefined localValue returns empty array', () => {
+    const orders = new Qar([{ orderId: 1 }]); // no userId field
+    const users = new Qar([{ _id: 10, name: 'Alice' }]);
+    const res = orders.aggregate([{ $lookup: { from: users, localField: 'userId', foreignField: '_id', as: 'user' } }]);
+    expect(res[0].user).toEqual([]);
+  });
+
+  test('$lookup with Qar instance missing _items uses fallback', () => {
+    const orders = new Qar([{ orderId: 1, userId: 10 }]);
+    const users = new Qar([{ _id: 10, name: 'Alice' }]);
+    // Manually clear _items to test fallback
+    users._items = undefined;
+    const res = orders.aggregate([{ $lookup: { from: users, localField: 'userId', foreignField: '_id', as: 'user' } }]);
+    expect(res[0].user).toEqual([]);
+  });
+
+  test('$lookup with localValue not in foreignMap returns empty array', () => {
+    const orders = new Qar([{ orderId: 1, userId: 999 }]); // userId not in users
+    const users = new Qar([{ _id: 10, name: 'Alice' }]);
+    const res = orders.aggregate([{ $lookup: { from: users, localField: 'userId', foreignField: '_id', as: 'user' } }]);
+    expect(res[0].user).toEqual([]);
+  });
 });

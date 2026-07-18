@@ -220,9 +220,35 @@ const projectStage = (docs, spec) => {
   });
 };
 
+const skipStage = (docs, n) => {
+  const normalizedSkip = Math.max(0, parseInt(String(n), 10) || 0);
+  return docs.slice(normalizedSkip);
+};
+
 const limitStage = (docs, n) => {
   const normalizedLimit = Math.max(0, parseInt(String(n), 10) || 0);
   return docs.slice(0, normalizedLimit);
+};
+
+const lookupStage = (docs, spec) => {
+  const { from, localField, foreignField, as } = spec;
+  if (!from || !localField || !foreignField || !as) return docs;
+
+  const foreignCollection = Array.isArray(from) ? from : (from._items || []);
+  const foreignMap = new Map();
+  for (const item of foreignCollection) {
+    const key = item[foreignField];
+    if (key !== undefined) {
+      if (!foreignMap.has(key)) foreignMap.set(key, []);
+      foreignMap.get(key).push(item);
+    }
+  }
+
+  return docs.map((doc) => {
+    const localValue = doc[localField];
+    const matched = localValue !== undefined ? foreignMap.get(localValue) || [] : [];
+    return { ...doc, [as]: matched };
+  });
 };
 
 const aggregate = (docs = [], pipeline = []) => {
@@ -236,6 +262,8 @@ const aggregate = (docs = [], pipeline = []) => {
     if (key === '$sort') return sortStage(cur, spec);
     if (key === '$project') return projectStage(cur, spec);
     if (key === '$limit') return limitStage(cur, spec);
+    if (key === '$skip') return skipStage(cur, spec);
+    if (key === '$lookup') return lookupStage(cur, spec);
     return cur;
   }, initial);
 };

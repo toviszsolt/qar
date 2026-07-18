@@ -170,4 +170,12 @@ describe('QueryCursor - additional branch tests', () => {
     expect(Array.isArray(res)).toBe(true);
     expect(res.length).toBe(2);
   });
+
+  test('constructor handles null/undefined options for branch coverage', () => {
+    const items = [{ id: 1, v: 1 }];
+    // Pass null options to hit the || {} branch
+    const qc = new QueryCursor(items, {}, null, null);
+    const res = qc.toArray();
+    expect(res).toEqual([{ id: 1, v: 1 }]);
+  });
 });
