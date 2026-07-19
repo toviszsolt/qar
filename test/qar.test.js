@@ -30,6 +30,15 @@ describe('Qar convenience methods', () => {
     expect(q.toArray()).toEqual([]);
   });
 
+  test('toArray returns deep copy (mutating nested field does not change source)', () => {
+    const q = new Qar(items);
+    const out = q.toArray();
+    // mutate a nested field of the returned copy
+    out[0].nested.x = 999;
+    // source array must remain unchanged
+    expect(q.toArray()[0].nested.x).toBe(1);
+  });
+
   test('findOne returns object or null', () => {
     const q = new Qar(items);
     expect(q.findOne({ id: 2 })).toEqual(items[1]);

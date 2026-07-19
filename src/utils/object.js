@@ -102,6 +102,18 @@ const objClone = (obj) => {
   return obj;
 };
 
+const sortObjectKeys = (value) => {
+  if (value == null) return value;
+  if (typeOf(value) === 'array') return value.map((el) => sortObjectKeys(el));
+  if (typeOf(value) !== 'object') return value;
+  const out = {};
+  for (const k of Object.keys(value).sort()) {
+    if (!isSafeKey(k)) continue;
+    out[k] = sortObjectKeys(value[k]);
+  }
+  return out;
+};
+
 const isPlainObject = (value) => {
   const type = typeOf(value);
   if (type !== 'object') return false;
@@ -143,4 +155,16 @@ const deepEqual = (a, b) => {
   return false;
 };
 
-export { isSafeKey, objClone, objPathResolve, objValueResolve, getByPath, setByPath, getParentForPath, sortDocuments, deepEqual, isPlainObject };
+export {
+  deepEqual,
+  getByPath,
+  getParentForPath,
+  isPlainObject,
+  isSafeKey,
+  objClone,
+  objPathResolve,
+  objValueResolve,
+  setByPath,
+  sortDocuments,
+  sortObjectKeys,
+};

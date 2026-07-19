@@ -1,5 +1,6 @@
 import Qar from '../../src/qar.js';
 import { aggregate } from '../../src/utils/aggregate.js';
+import { projectCollection } from '../../src/utils/projection.js';
 
 describe('aggregation helpers', () => {
   const products = new Qar([
@@ -426,11 +427,15 @@ describe('aggregate extended', () => {
   });
 
   test('$lookup stage performs left join', () => {
-    const orders = new Qar([{ orderId: 1, userId: 10 }, { orderId: 2, userId: 20 }]);
-    const users = new Qar([{ _id: 10, name: 'Alice' }, { _id: 20, name: 'Bob' }]);
-    const res = orders.aggregate([
-      { $lookup: { from: users, localField: 'userId', foreignField: '_id', as: 'user' } },
+    const orders = new Qar([
+      { orderId: 1, userId: 10 },
+      { orderId: 2, userId: 20 },
     ]);
+    const users = new Qar([
+      { _id: 10, name: 'Alice' },
+      { _id: 20, name: 'Bob' },
+    ]);
+    const res = orders.aggregate([{ $lookup: { from: users, localField: 'userId', foreignField: '_id', as: 'user' } }]);
     expect(res.length).toBe(2);
     expect(res[0].user).toEqual([{ _id: 10, name: 'Alice' }]);
     expect(res[1].user).toEqual([{ _id: 20, name: 'Bob' }]);
@@ -487,5 +492,123 @@ describe('aggregate extended', () => {
     const users = new Qar([{ _id: 10, name: 'Alice' }]);
     const res = orders.aggregate([{ $lookup: { from: users, localField: 'userId', foreignField: '_id', as: 'user' } }]);
     expect(res[0].user).toEqual([]);
+  });
+
+  test('$lookup with from object lacking _items returns empty join', () => {
+    const orders = new Qar([{ orderId: 1, userId: 10 }]);
+    // from has no _items property -> treated as empty collection, no throw
+    const fromNoItems = { localField: 'userId' };
+    const res = orders.aggregate([
+      { $lookup: { from: fromNoItems, localField: 'userId', foreignField: '_id', as: 'user' } },
+    ]);
+    expect(res[0].user).toEqual([]);
+  });
+
+  test('$lookup with from object whose _items is not an array returns empty join', () => {
+    const orders = new Qar([{ orderId: 1, userId: 10 }]);
+    const fromBadItems = { _items: 'not-an-array' };
+    const res = orders.aggregate([
+      { $lookup: { from: fromBadItems, localField: 'userId', foreignField: '_id', as: 'user' } },
+    ]);
+    expect(res[0].user).toEqual([]);
+  });
+
+  test('$lookup result is a deep copy (mutating joined nested field does not change from collection)', () => {
+    const orders = new Qar([{ orderId: 1, userId: 10 }]);
+    const users = new Qar([{ _id: 10, name: 'Alice', profile: { age: 30 } }]);
+    const res = orders.aggregate([{ $lookup: { from: users, localField: 'userId', foreignField: '_id', as: 'user' } }]);
+    // mutate a nested field of the joined document
+    res[0].user[0].profile.age = 99;
+    // source collection must be unchanged
+    expect(users.toArray()[0].profile.age).toBe(30);
+  });
+
+  test('$group with object _id of different key order produces a single group', () => {
+    const data = new Qar([
+      { a: 1, b: 2, v: 10 },
+      { b: 2, a: 1, v: 20 },
+      { a: 1, b: 3, v: 5 },
+    ]);
+    const res = data.aggregate([{ $group: { _id: { a: '$a', b: '$b' }, total: { $sum: '$v' } } }]);
+    // {a:1,b:2} and {b:2,a:1} are the same group (key order normalized)
+    const map = {};
+    for (const r of res) map[JSON.stringify(r._id)] = r.total;
+    expect(map[JSON.stringify({ a: 1, b: 2 })]).toBe(30);
+    expect(map[JSON.stringify({ a: 1, b: 3 })]).toBe(5);
+    expect(res.length).toBe(2);
+  });
+
+  test('$group with object _id containing nested array normalizes key order', () => {
+    const data = new Qar([
+      { a: 1, tags: ['x', 'y'], v: 10 },
+      { tags: ['x', 'y'], a: 1, v: 20 },
+      { a: 1, tags: ['y', 'x'], v: 5 },
+    ]);
+    // sortObjectKeys recurses into arrays; {a:1,tags:['x','y']} and {tags:['x','y'],a:1}
+    // are the same group, but a different array order is a different group.
+    const res = data.aggregate([{ $group: { _id: { a: '$a', tags: '$tags' }, total: { $sum: '$v' } } }]);
+    const map = {};
+    for (const r of res) map[JSON.stringify(r._id)] = r.total;
+    expect(map[JSON.stringify({ a: 1, tags: ['x', 'y'] })]).toBe(30);
+    expect(map[JSON.stringify({ a: 1, tags: ['y', 'x'] })]).toBe(5);
+    expect(res.length).toBe(2);
+  });
+
+  test('$group with object _id containing null value covers sortObjectKeys null branch', () => {
+    const data = new Qar([
+      { a: 1, tag: null, v: 10 },
+      { a: 1, tag: null, v: 20 },
+      { a: 1, tag: 'x', v: 5 },
+    ]);
+    // _id: { a: '$a', tag: '$tag' } -> resolves to { a: 1, tag: null } etc.
+    // sortObjectKeys recursively called with null via value lookup -> covers line 25 true branch
+    const res = data.aggregate([{ $group: { _id: { a: '$a', tag: '$tag' }, total: { $sum: '$v' } } }]);
+    const map = {};
+    for (const r of res) map[JSON.stringify(r._id)] = r.total;
+    expect(map[JSON.stringify({ a: 1, tag: null })]).toBe(30);
+    expect(map[JSON.stringify({ a: 1, tag: 'x' })]).toBe(5);
+    expect(res.length).toBe(2);
+  });
+
+  test('$group object _id with __proto__ key is filtered by isSafeKey', () => {
+    // Build an object with __proto__ as an own property (object literal __proto__ key
+    // triggers the prototype setter; Object.create(null) avoids that).
+    const unsafeObj = Object.create(null);
+    unsafeObj.__proto__ = { x: 1 };
+    unsafeObj.b = 2;
+    expect(Object.keys(unsafeObj).sort()).toEqual(['__proto__', 'b']);
+    const data = new Qar([
+      { a: 1, nested: unsafeObj, v: 10 },
+      { a: 1, nested: { b: 2 }, v: 20 },
+    ]);
+    // sortObjectKeys isSafeKey skips __proto__ during key string computation,
+    // so both docs produce the same group key and are merged.
+    const res = data.aggregate([{ $group: { _id: { a: '$a', n: '$nested' }, total: { $sum: '$v' } } }]);
+    // Both docs merged into one group (__proto__ filtered out in key computation)
+    expect(res.length).toBe(1);
+    expect(res[0].total).toBe(30);
+  });
+
+  test('$group with array _id normalizes element order', () => {
+    const data = new Qar([
+      { tags: ['x', 'y'], v: 10 },
+      { tags: ['y', 'x'], v: 20 },
+      { tags: ['x', 'y'], v: 5 },
+    ]);
+    // _id is an array; typeOf(array)='array' so sortObjectKeys is NOT called
+    // (only called when typeOf(idValue)==='object'). Array element order is preserved.
+    const res = data.aggregate([{ $group: { _id: '$tags', total: { $sum: '$v' } } }]);
+    const map = {};
+    for (const r of res) map[JSON.stringify(r._id)] = r.total;
+    expect(map[JSON.stringify(['x', 'y'])]).toBe(15);
+    expect(map[JSON.stringify(['y', 'x'])]).toBe(20);
+    expect(res.length).toBe(2);
+  });
+
+  test('aggregate $project nested object spec includes whole nested object', () => {
+    const docs = [{ id: 1, addr: { city: 'NY', zip: 10001, country: 'US' } }];
+    // projectCollection include mode treats a nested object spec as inclusion of the whole field
+    const res = projectCollection(docs, { addr: { city: 1 } });
+    expect(res).toEqual([{ id: 1, addr: { city: 'NY', zip: 10001, country: 'US' } }]);
   });
 });

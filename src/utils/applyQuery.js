@@ -1,7 +1,6 @@
 import { evaluateExpression } from './expressions.js';
-import { objValueResolve } from './object.js';
+import { deepEqual, objClone, objValueResolve } from './object.js';
 import { typeOf } from './typeOf.js';
-import { deepEqual } from './object.js';
 
 const throwError = (...args) => {
   throw new Error(args.join(' '));
@@ -85,10 +84,12 @@ const OPERATORS = Object.freeze({
   },
 
   $regex: (value, pattern, opts) => {
+    if (typeOf(pattern) !== 'string') return false;
+    if (opts !== undefined && (typeOf(opts) !== 'string' || !/^[gimsuy]*$/.test(opts))) return false;
+    if (String(value).length > 10000) return false;
     try {
-      return new RegExp(pattern, opts).test(String(value));
+      return new RegExp(pattern, opts || '').test(String(value));
     } catch (e) {
-      throwError('[applyQuery] invalid $regex pattern:', pattern, 'error:', e && e.message);
       return false;
     }
   },
@@ -101,7 +102,7 @@ const evaluateCondition = (value, condition) => {
 
   const keys = Object.keys(condition);
   const operatorKeys = keys.filter((k) => Object.prototype.hasOwnProperty.call(OPERATORS, k));
-  const hasDollarKeys = keys.some((k) => typeof k === 'string' && k.startsWith('$'));
+  const hasDollarKeys = keys.some((k) => typeOf(k) === 'string' && k.startsWith('$') && k !== '$options');
 
   if (operatorKeys.length === 0) {
     if (hasDollarKeys) {
@@ -203,9 +204,12 @@ const applyQuery = (collection = [], query, options = {}) => {
 
       if (lookupValue !== undefined && indexes[key] instanceof Map) {
         const idx = indexes[key];
-        const candidates = idx.get(lookupValue) || [];
-        const results = candidates.filter((el) => matches(el, query));
-        return results;
+        const candidates = idx.get(lookupValue);
+        if (candidates && candidates.length) {
+          return candidates.filter((el) => matches(el, query)).map((r) => objClone(r));
+        }
+        // Index had no candidates for this value; fall through to a full scan
+        // since the index is only a hint and may be incomplete.
       }
     }
   }

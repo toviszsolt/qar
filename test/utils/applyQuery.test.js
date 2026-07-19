@@ -1,3 +1,4 @@
+import Qar from '../../src/qar.js';
 import { applyQuery, matches } from '../../src/utils/applyQuery.js';
 
 describe('applyQuery', () => {
@@ -188,10 +189,14 @@ describe('applyQuery', () => {
     expect(applyQuery(a, { v: { $in: [] } })).toEqual([]);
   });
 
-  test.concurrent('invalid $regex logs warning and returns false', () => {
+  test.concurrent('invalid $regex does not throw and returns false', () => {
     const a = [{ name: 'Alice' }];
     const a2 = [{ name: 'Alice' }];
-    expect(() => applyQuery(a2, { name: { $regex: '[invalid' } })).toThrow();
+    // invalid regex pattern (with valid flag so it reaches the try/catch) is caught -> false
+    expect(() => applyQuery(a2, { name: { $regex: '(', $options: 'i' } })).not.toThrow();
+    expect(applyQuery(a, { name: { $regex: '(', $options: 'i' } })).toEqual([]);
+    // invalid regex pattern without options is also caught -> false
+    expect(applyQuery(a, { name: { $regex: '[invalid' } })).toEqual([]);
   });
 
   test.concurrent('unrecognized operator emits warning', () => {
@@ -349,6 +354,60 @@ describe('applyQuery', () => {
     expect(applyQuery(a, { $regex: '^A' })).toEqual([]);
   });
 
+  test.concurrent('$regex with valid options and short value executes regex', () => {
+    const a = [{ name: 'Alice' }, { name: 'Bob' }];
+    // pattern is a string, opts is a valid string, value length <= 10000:
+    // the length guard branch is not taken and the regex actually runs.
+    expect(applyQuery(a, { name: { $regex: '^A', $options: 'i' } })).toEqual([{ name: 'Alice' }]);
+    expect(applyQuery(a, { name: { $regex: '^b', $options: 'i' } })).toEqual([{ name: 'Bob' }]);
+    // missing field -> value is undefined; early guard in matches() (line 155–161)
+    // catches non-string values for $regex conditions before evaluateCondition runs.
+    expect(applyQuery(a, { missing: { $regex: '^A', $options: 'i' } })).toEqual([]);
+  });
+
+  test.concurrent('$regex without $options works with string values', () => {
+    const a = [{ name: 'Alice' }, { name: 'Bob' }, { name: 'Al' }];
+    // undefined opts defaults to ''; regex runs with no flags
+    expect(applyQuery(a, { name: { $regex: '^A' } })).toEqual([a[0], a[2]]);
+    expect(applyQuery(a, { name: { $regex: 'Bob' } })).toEqual([a[1]]);
+    // case-sensitive by default
+    expect(applyQuery(a, { name: { $regex: '^al' } })).toEqual([]);
+    // missing field still returns no match (caught by matches() non-string guard)
+    expect(applyQuery(a, { missing: { $regex: '^A' } })).toEqual([]);
+  });
+
+  test.concurrent('$regex with non-string pattern returns false', () => {
+    const a = [{ name: 'Alice' }];
+    // pattern must be a string; non-string pattern yields no match
+    expect(applyQuery(a, { name: { $regex: 123 } })).toEqual([]);
+    expect(applyQuery(a, { name: { $regex: null } })).toEqual([]);
+  });
+
+  test.concurrent('$regex with invalid options flag returns false', () => {
+    const a = [{ name: 'Alice' }];
+    // options must match /^[gimsuy]*$/; invalid flag yields no match
+    expect(applyQuery(a, { name: { $regex: '^a', $options: 'x' } })).toEqual([]);
+    expect(applyQuery(a, { name: { $regex: '^a', $options: 5 } })).toEqual([]);
+  });
+
+  test.concurrent('$regex with very long non-matching value does not hang (ReDoS guard)', () => {
+    const longValue = 'a'.repeat(11000);
+    const a = [{ name: longValue }];
+    // value longer than 10000 chars is rejected before regex execution -> false, fast
+    const start = Date.now();
+    const res = applyQuery(a, { name: { $regex: '(a+)+b' } });
+    expect(res).toEqual([]);
+    expect(Date.now() - start).toBeLessThan(1000);
+  });
+
+  test.concurrent('$regex with long value and valid $options triggers length guard', () => {
+    const longValue = 'a'.repeat(11000);
+    const a = [{ name: longValue }];
+    // value > 10000 chars even with valid opts passes line 88, then line 89 rejects it
+    const res = applyQuery(a, { name: { $regex: '^a', $options: 'i' } });
+    expect(res).toEqual([]);
+  });
+
   test.concurrent('$mod with invalid arg returns no match', () => {
     const a = [{ n: 5 }];
     expect(applyQuery(a, { n: { $mod: 'no' } })).toEqual([]);
@@ -429,11 +488,12 @@ describe('applyQuery', () => {
     expect(res).toEqual([a[0]]);
   });
 
-  test.concurrent('index missing key returns empty candidates', () => {
+  test.concurrent('index missing key falls back to full scan', () => {
     const a = [{ id: 1, v: 'x' }];
     const index = new Map(); // no entries
+    // index is only a hint; missing key must fall through to a full scan
     const res = applyQuery(a, { v: 'x' }, { indexes: { v: index } });
-    expect(res).toEqual([]);
+    expect(res).toEqual([a[0]]);
   });
 
   test.concurrent('index filtering actually filters candidates via matches', () => {
@@ -445,6 +505,47 @@ describe('applyQuery', () => {
     index.set('x', [a[0], a[1]]);
     const res = applyQuery(a, { v: 'x', p: 1 }, { indexes: { v: index } });
     expect(res).toEqual([a[0]]);
+  });
+
+  test.concurrent('index fallback for find when value not in index', () => {
+    const a = [
+      { id: 1, v: 'x' },
+      { id: 2, v: 'y' },
+    ];
+    const index = new Map();
+    index.set('x', [a[0]]); // 'y' is not in the index
+    // full scan fallback should still find the 'y' document
+    const res = applyQuery(a, { v: 'y' }, { indexes: { v: index } });
+    expect(res).toEqual([a[1]]);
+  });
+
+  test.concurrent('index fallback for count when value not in index', () => {
+    const a = [
+      { id: 1, v: 'x' },
+      { id: 2, v: 'y' },
+    ];
+    const index = new Map();
+    index.set('x', [a[0]]);
+    const q = new Qar(a);
+    expect(q.count({ v: 'y' }, { indexes: { v: index } })).toBe(1);
+  });
+
+  test.concurrent('index fallback for distinct when value not in index', () => {
+    const a = [
+      { id: 1, v: 'x' },
+      { id: 2, v: 'y' },
+    ];
+    const index = new Map();
+    index.set('x', [a[0]]);
+    const q = new Qar(a);
+    expect(q.distinct('v', {}, { indexes: { v: index } }).sort()).toEqual(['x', 'y'].sort());
+  });
+
+  test.concurrent('$options-only condition does not throw and returns no match', () => {
+    const a = [{ name: 'Alice' }];
+    // $options is excluded from the dollar-key check, so it is treated as a plain field
+    expect(() => applyQuery(a, { name: { $options: 'i' } })).not.toThrow();
+    expect(applyQuery(a, { name: { $options: 'i' } })).toEqual([]);
   });
 
   test.concurrent('date comparisons for $lt/$lte/$gte', () => {

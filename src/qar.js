@@ -1,6 +1,6 @@
 import { aggregate as runAggregate } from './utils/aggregate.js';
-import { applyQuery, matches } from './utils/applyQuery.js';
-import { objValueResolve } from './utils/object.js';
+import { applyQuery } from './utils/applyQuery.js';
+import { objClone, objValueResolve } from './utils/object.js';
 import { QueryCursor } from './utils/queryCursor.js';
 import { typeOf } from './utils/typeOf.js';
 import { validateDatabaseLike } from './utils/validate.js';
@@ -51,6 +51,6 @@ export default class Qar {
   }
 
   toArray() {
-    return typeOf(this._items) === 'array' ? [...this._items] : [];
+    return typeOf(this._items) === 'array' ? this._items.map((it) => objClone(it)) : [];
   }
 }

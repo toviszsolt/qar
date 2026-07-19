@@ -227,4 +227,17 @@ describe('expressions extensions', () => {
   test('evaluateExpression top-level array maps each item', () => {
     expect(evaluateExpression([null, { $add: [1, 2] }, { $eq: [1, 1] }])).toEqual([null, 3, true]);
   });
+
+  test('$expr $eq/$ne use deep equality for arrays and objects', () => {
+    const doc = { tags: ['a', 'b'], addr: { city: 'NY', zip: 10001 } };
+    // deep equality with array literal
+    expect(evaluateExpression({ $eq: [['a', 'b'], '$tags'] }, doc)).toBe(true);
+    expect(evaluateExpression({ $ne: [['a', 'b'], '$tags'] }, doc)).toBe(false);
+    // deep equality with object literal
+    expect(evaluateExpression({ $eq: [{ city: 'NY', zip: 10001 }, '$addr'] }, doc)).toBe(true);
+    expect(evaluateExpression({ $ne: [{ city: 'NY', zip: 10001 }, '$addr'] }, doc)).toBe(false);
+    // mismatched deep equality
+    expect(evaluateExpression({ $eq: [['a', 'c'], '$tags'] }, doc)).toBe(false);
+    expect(evaluateExpression({ $ne: [['a', 'c'], '$tags'] }, doc)).toBe(true);
+  });
 });

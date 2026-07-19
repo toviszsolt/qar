@@ -1,4 +1,4 @@
-import { projectCollection, projectItem } from '../../src/utils/projection.js';
+import { isProjectionSpec, projectCollection, projectItem } from '../../src/utils/projection.js';
 
 describe('projection utility', () => {
   test('include fields and exclude _id when specified', () => {
@@ -208,5 +208,19 @@ describe('projection utility', () => {
     const res = projectItem(item, { 'constructor.x': 1 });
     expect(Object.prototype.hasOwnProperty.call(Object.prototype, 'x')).toBe(false);
     expect(res).toEqual({ x: 1 });
+  });
+
+  test('isProjectionSpec validates projection spec shapes', () => {
+    // numeric 1 / 0 are valid specs
+    expect(isProjectionSpec(1)).toBe(true);
+    expect(isProjectionSpec(0)).toBe(true);
+    // non-object (string) is not a valid spec
+    expect(isProjectionSpec('foo')).toBe(false);
+    // object with only non-$ nested specs is valid
+    expect(isProjectionSpec({ name: 1, addr: { city: 1 } })).toBe(true);
+    // object containing a $-prefixed key is invalid
+    expect(isProjectionSpec({ $elemMatch: { x: 1 } })).toBe(false);
+    // nested object containing a $-prefixed key is invalid
+    expect(isProjectionSpec({ addr: { $bad: 1 } })).toBe(false);
   });
 });

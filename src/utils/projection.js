@@ -1,5 +1,5 @@
 import { evaluateCondition } from './applyQuery.js';
-import { getByPath, objValueResolve, setByPath } from './object.js';
+import { getByPath, objClone, objValueResolve, setByPath } from './object.js';
 import { typeOf } from './typeOf.js';
 
 const collectArrayFieldConditions = (query, arrayField, acc = []) => {
@@ -31,6 +31,12 @@ const collectArrayFieldConditions = (query, arrayField, acc = []) => {
   }
 
   return acc;
+};
+
+const isProjectionSpec = (v) => {
+  if (v === 1 || v === 0) return true;
+  if (typeOf(v) !== 'object') return false;
+  return Object.keys(v).every((k) => !k.startsWith('$') && isProjectionSpec(v[k]));
 };
 
 const makePositionalPredicate = (query, arrayField) => {
@@ -70,7 +76,7 @@ const elementMatchesCondition = (elem, cond) => {
 };
 
 const projectItem = (item = {}, projection, query = null) => {
-  if (!projection || typeOf(projection) !== 'object') return { ...item };
+  if (!projection || typeOf(projection) !== 'object') return objClone(item);
 
   const keys = Object.keys(projection);
   const hasExclude = keys.some((k) => projection[k] === 0);
@@ -107,12 +113,12 @@ const projectItem = (item = {}, projection, query = null) => {
 
       if (spec === 1) {
         const v = getByPath(item, key);
-        if (v !== undefined) setByPath(result, key, v);
+        if (v !== undefined) setByPath(result, key, objClone(v));
       } else if (typeOf(spec) === 'object' && Object.prototype.hasOwnProperty.call(spec, '$elemMatch')) {
         const arr = getByPath(item, key);
         if (typeOf(arr) === 'array') {
           const found = arr.find((el) => elementMatchesCondition(el, spec.$elemMatch));
-          if (found !== undefined) setByPath(result, key, [found]);
+          if (found !== undefined) setByPath(result, key, [objClone(found)]);
         }
       } else if (typeOf(spec) === 'object' && Object.prototype.hasOwnProperty.call(spec, '$slice')) {
         const v = getByPath(item, key);
@@ -120,7 +126,7 @@ const projectItem = (item = {}, projection, query = null) => {
           const n = spec.$slice;
           const sliced =
             typeOf(v) === 'array' ? (typeOf(n) !== 'number' || n === 0 ? [] : n > 0 ? v.slice(0, n) : v.slice(n)) : v;
-          setByPath(result, key, sliced);
+          setByPath(result, key, objClone(sliced));
         }
       }
     }
@@ -129,7 +135,7 @@ const projectItem = (item = {}, projection, query = null) => {
     return result;
   }
 
-  for (const key of Object.keys(item)) result[key] = item[key];
+  for (const key of Object.keys(item)) result[key] = objClone(item[key]);
 
   for (const key of keys) {
     const spec = projection[key];
@@ -149,8 +155,8 @@ const projectItem = (item = {}, projection, query = null) => {
 
 const projectCollection = (items = [], projection, query = null) => {
   if (typeOf(items) !== 'array') return items;
-  if (!projection || typeOf(projection) !== 'object') return items.map((it) => ({ ...it }));
+  if (!projection || typeOf(projection) !== 'object') return items.map((it) => objClone(it));
   return items.map((it) => projectItem(it, projection, query));
 };
 
-export { projectCollection, projectItem };
+export { isProjectionSpec, projectCollection, projectItem };

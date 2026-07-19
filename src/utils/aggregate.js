@@ -1,6 +1,6 @@
 import { applyQuery } from './applyQuery.js';
 import { evaluateExpression } from './expressions.js';
-import { getParentForPath, isSafeKey, objClone, objValueResolve, setByPath } from './object.js';
+import { getParentForPath, isSafeKey, objClone, objValueResolve, setByPath, sortObjectKeys } from './object.js';
 import { typeOf } from './typeOf.js';
 
 const parseUnwindSpec = (source) => {
@@ -149,7 +149,7 @@ const groupStage = (docs, spec) => {
             ? evaluateExpression(spec._id, d)
             : spec._id;
 
-    const keyStr = typeOf(idValue) === 'object' ? JSON.stringify(idValue) : String(idValue);
+    const keyStr = typeOf(idValue) === 'object' ? JSON.stringify(sortObjectKeys(idValue)) : String(idValue);
     if (!groups.has(keyStr)) {
       groups.set(keyStr, initializeGroupAccumulator(idValue, spec));
     }
@@ -234,20 +234,21 @@ const lookupStage = (docs, spec) => {
   const { from, localField, foreignField, as } = spec;
   if (!from || !localField || !foreignField || !as) return docs;
 
-  const foreignCollection = Array.isArray(from) ? from : (from._items || []);
+  const foreignCollection =
+    typeOf(from) === 'array' ? from : from && typeOf(from._items) === 'array' ? from._items : [];
   const foreignMap = new Map();
   for (const item of foreignCollection) {
     const key = item[foreignField];
     if (key !== undefined) {
       if (!foreignMap.has(key)) foreignMap.set(key, []);
-      foreignMap.get(key).push(item);
+      foreignMap.get(key).push(objClone(item));
     }
   }
 
   return docs.map((doc) => {
     const localValue = doc[localField];
     const matched = localValue !== undefined ? foreignMap.get(localValue) || [] : [];
-    return { ...doc, [as]: matched };
+    return { ...objClone(doc), [as]: matched };
   });
 };
 

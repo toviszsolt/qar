@@ -1,4 +1,4 @@
-import { objValueResolve } from './object.js';
+import { deepEqual, objValueResolve } from './object.js';
 import { typeOf } from './typeOf.js';
 
 const MIN_OPERAND_COUNT = 2;
@@ -94,9 +94,9 @@ const handleComparison = (op, expr, ctx) => {
     case '$gte':
       return { handled: true, result: leftValue >= rightValue };
     case '$eq':
-      return { handled: true, result: leftValue === rightValue };
+      return { handled: true, result: deepEqual(leftValue, rightValue) };
     case '$ne':
-      return { handled: true, result: leftValue !== rightValue };
+      return { handled: true, result: !deepEqual(leftValue, rightValue) };
   }
 };
 
