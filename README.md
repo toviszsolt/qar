@@ -18,7 +18,7 @@ MongoDB-style queries for plain JavaScript arrays. Simple, lightweight, and perf
 
 ## Table of Contents
 
-[[Use&nbsp;Cases](#use-cases)] [[Why&nbsp;Qar?](#why-qar)] [[Installation](#installation)] [[Quick&nbsp;Start](#quick-start)] [[API&nbsp;Reference](#api-reference)] [[Query&nbsp;Operators](#query-operators)] [[Nested&nbsp;Properties](#nested-properties)] [[Field&nbsp;Projection](#field-projection)] [[Aggregation&nbsp;Pipeline](#aggregation-pipeline)] [[Examples](#examples)] [[Why&nbsp;Qar&nbsp;over&nbsp;alternatives?](#why-qar-over-alternatives)] [[TypeScript](#typescript)] [[Browser&nbsp;Support](#browser-support)] [[Guidelines](#guidelines)] [[License](#license)]
+[[Use&nbsp;Cases](#use-cases)] [[Why&nbsp;Qar?](#why-qar)] [[Installation](#installation)] [[Quick&nbsp;Start](#quick-start)] [[API&nbsp;Reference](#api-reference)] [[Query&nbsp;Operators](#query-operators)] [[Nested&nbsp;Properties](#nested-properties)] [[Field&nbsp;Projection](#field-projection)] [[Aggregation&nbsp;Pipeline](#aggregation-pipeline)] [[Index&nbsp;Optimization&nbsp;(Large&nbsp;Datasets)](#index-optimization-large-datasets)] [[$skip&nbsp;Stage](#skip-stage)] [[$lookup&nbsp;Stage&nbsp;(Join)](#lookup-stage-join)] [[Examples](#examples)] [[Advanced&nbsp;Examples](#advanced-examples)] [[Why&nbsp;Qar&nbsp;over&nbsp;alternatives?](#why-qar-over-alternatives)] [[TypeScript](#typescript)] [[Browser&nbsp;Support](#browser-support)] [[Guidelines](#guidelines)] [[License](#license)]
 
 ## Sponsoring
 
@@ -829,7 +829,7 @@ const categories = posts.aggregate([
 - Real-time data updates - use a database with subscriptions
 - Complex JOIN operations across multiple collections
 
-## Examples
+## Advanced Examples
 
 ### Complex Queries
 
